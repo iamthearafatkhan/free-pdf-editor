@@ -4,7 +4,6 @@
 <meta charset="UTF-8" />
 <meta name="viewport" content="width=device-width, initial-scale=1" />
 
-<!-- ================= PRIMARY SEO ================= -->
 <title>Free PDF Editor — Edit Text in Any PDF Online (No Sign-Up, No Subscription)</title>
 <meta name="description" content="Free browser-based PDF editor. Edit text inside any PDF like Word — add text, edit paragraphs, save as PDF or DOCX. No sign-up, no subscription, no uploads. Your file never leaves your device." />
 <meta name="keywords" content="free pdf editor, edit pdf online, pdf text editor, edit pdf without subscription, browser pdf editor, online pdf editor free, edit pdf like word, free pdf editor no sign up, pdf editor no watermark" />
@@ -79,6 +78,7 @@
     display:flex; height:100vh; overflow:hidden;
   }
 
+  /* ===== SIDEBAR ===== */
   aside{
     width:var(--sidebar-w); flex:0 0 var(--sidebar-w);
     background:var(--panel); border-right:1px solid var(--border);
@@ -125,6 +125,15 @@
     border:1px solid #dbe3ff; border-radius:4px; margin:0 2px;
   }
 
+  .outline-toggle{
+    display:flex; align-items:center; gap:8px; margin-top:12px;
+    font-size:12px; color:var(--muted); cursor:pointer; user-select:none;
+    padding:6px 8px; border:1px solid var(--border); border-radius:6px;
+    background:#fafbff;
+  }
+  .outline-toggle input{accent-color:var(--brand); cursor:pointer; margin:0;}
+
+  /* ===== MAIN ===== */
   main{ flex:1; display:flex; flex-direction:column; overflow:hidden; min-width:0; }
 
   header.topbar{
@@ -210,7 +219,18 @@
   .para.changed:hover{border-color:rgba(59,91,219,.35);}
   .para.changed:focus{border-color:var(--brand);}
 
-  /* ================= ALIGNMENT TOOLBAR ================= */
+  /* Outlines toggle — visual debug aid */
+  .show-outlines .para{
+    border:1px dashed rgba(59,91,219,.55);
+    background:rgba(59,91,219,.02);
+  }
+  .show-outlines .para.changed{
+    border-color:rgba(234,88,12,.7);
+    background:rgba(251,191,36,.10);
+  }
+  .show-outlines .para:hover{background:rgba(59,91,219,.08);}
+
+  /* ===== ALIGNMENT TOOLBAR ===== */
   .align-toolbar{
     position:fixed;
     background:#fff;
@@ -225,7 +245,7 @@
   }
   .align-toolbar.show{display:flex;}
   .align-toolbar button{
-    padding:7px 9px;
+    padding:7px;
     border:none;
     background:transparent;
     border-radius:6px;
@@ -243,7 +263,7 @@
   .align-toolbar button.active:hover{background:var(--brand-2); color:#fff;}
   .align-toolbar svg{width:16px; height:16px; display:block;}
   .align-toolbar .sep{
-    width:1px; background:var(--border); margin:4px 3px;
+    width:1px; background:var(--border); margin:4px 3px; align-self:stretch;
   }
 
   .sr-only{
@@ -292,7 +312,6 @@
     main{overflow:visible;}
     header.topbar{grid-template-columns:1fr; gap:8px;}
     header .left-side, header .center-actions, header .right-side{ justify-content:center; }
-    header .right-side{justify-content:center;}
   }
 
   aside::-webkit-scrollbar, .viewport::-webkit-scrollbar{width:10px;}
@@ -338,7 +357,7 @@
   <p>FreePDF Editor is a browser-based PDF editor that lets you edit text inside any PDF like Word. No sign-up, no subscription, no uploads. Left, center, right, and justified alignment supported.</p>
 </div>
 
-<!-- ================= ALIGNMENT TOOLBAR (floating) ================= -->
+<!-- ================= ALIGNMENT TOOLBAR ================= -->
 <div class="align-toolbar" id="alignToolbar" role="toolbar" aria-label="Text alignment">
   <button data-align="left" title="Left align (Ctrl+Shift+L)" aria-label="Align left">
     <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round">
@@ -368,6 +387,29 @@
       <line x1="3" y1="18" x2="21" y2="18"/>
     </svg>
   </button>
+  <div class="sep"></div>
+  <button data-action="split" title="Split paragraph here (adds break at cursor)" aria-label="Split paragraph">
+    <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
+      <path d="M12 3v10"/>
+      <path d="M8 9l4 4 4-4"/>
+      <path d="M4 20h16"/>
+    </svg>
+  </button>
+  <button data-action="merge" title="Merge with paragraph below" aria-label="Merge paragraph">
+    <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
+      <path d="M12 15V5"/>
+      <path d="M8 9l4-4 4 4"/>
+      <path d="M4 20h16"/>
+    </svg>
+  </button>
+  <div class="sep"></div>
+  <button data-action="delete" title="Delete this paragraph" aria-label="Delete paragraph">
+    <svg viewBox="0 0 24 24" fill="none" stroke="#dc2626" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
+      <path d="M3 6h18"/>
+      <path d="M8 6V4a2 2 0 0 1 2-2h4a2 2 0 0 1 2 2v2"/>
+      <path d="M19 6l-1 14a2 2 0 0 1-2 2H8a2 2 0 0 1-2-2L5 6"/>
+    </svg>
+  </button>
 </div>
 
 <!-- =========================  SIDEBAR  ========================= -->
@@ -381,15 +423,15 @@
     <h2>How to use</h2>
     <div class="step">
       <div class="n">1</div>
-      <div class="t"><b>Open your PDF</b><small>Click "Open PDF" at the top, or drag a file onto the page.</small></div>
+      <div class="t"><b>Open your PDF</b><small>Click "Open PDF" or drag a file onto the page.</small></div>
     </div>
     <div class="step">
       <div class="n">2</div>
-      <div class="t"><b>Click any paragraph</b><small>It becomes editable. Type as you would in Word.</small></div>
+      <div class="t"><b>Click any paragraph</b><small>It becomes editable like a Word document.</small></div>
     </div>
     <div class="step">
       <div class="n">3</div>
-      <div class="t"><b>Change alignment</b><small>Use the floating toolbar above the paragraph — left, center, right, or justify.</small></div>
+      <div class="t"><b>Change alignment</b><small>Use the floating toolbar — left, center, right, or justify.</small></div>
     </div>
     <div class="step">
       <div class="n">4</div>
@@ -400,14 +442,19 @@
   <div class="side-section">
     <h2>Tips</h2>
     <p>· Delete a whole paragraph's text and the lines below <b>slide up</b> automatically.</p>
-    <p>· Edited paragraphs are marked <span style="background:#fff8b8;padding:0 4px;">yellow</span> until you save.</p>
-    <p>· Alignment shortcuts: <span class="kbd">Ctrl+Shift+L</span> (left), <span class="kbd">E</span> (center), <span class="kbd">R</span> (right), <span class="kbd">J</span> (justify).</p>
-    <p>· Fonts are detected from the PDF; Arial / Times / Courier are matched on export.</p>
+    <p>· Edited paragraphs turn <span style="background:#fff8b8;padding:0 4px;">yellow</span>.</p>
+    <p>· Shortcuts: <span class="kbd">Ctrl+Shift+L</span> <span class="kbd">E</span> <span class="kbd">R</span> <span class="kbd">J</span></p>
+    <p>· Fonts auto-detected; Arial/Times/Courier matched on export.</p>
+    <label class="outline-toggle">
+      <input type="checkbox" id="showOutlines" />
+      <span>Show paragraph outlines</span>
+    </label>
   </div>
 
   <div class="side-section">
     <h2>Document stats</h2>
     <div class="stat-row"><span class="k">Pages</span><span class="v" id="statPages">0</span></div>
+    <div class="stat-row"><span class="k">Paragraphs</span><span class="v" id="statParas">0</span></div>
     <div class="stat-row"><span class="k">Words</span><span class="v" id="statWords">0</span></div>
     <div class="stat-row"><span class="k">Characters</span><span class="v" id="statChars">0</span></div>
     <div class="stat-row"><span class="k">Edited paragraphs</span><span class="v" id="statEdited">0</span></div>
@@ -494,7 +541,7 @@
 
 <script>
 /* ================================================================
-   0. Setup
+   0. SETUP
 ================================================================ */
 pdfjsLib.GlobalWorkerOptions.workerSrc =
   "https://cdnjs.cloudflare.com/ajax/libs/pdf.js/3.11.174/pdf.worker.min.js";
@@ -511,6 +558,7 @@ const els = {
   fileName:  document.getElementById('fileName'),
   docInfo:   document.getElementById('docInfo'),
   statPages: document.getElementById('statPages'),
+  statParas: document.getElementById('statParas'),
   statWords: document.getElementById('statWords'),
   statChars: document.getElementById('statChars'),
   statEdited:document.getElementById('statEdited'),
@@ -543,8 +591,13 @@ function downloadBlob(blob, filename){
 
 document.getElementById('year').textContent = new Date().getFullYear();
 
+/* Outline toggle */
+document.getElementById('showOutlines').addEventListener('change', e => {
+  document.body.classList.toggle('show-outlines', e.target.checked);
+});
+
 /* ================================================================
-   1. Metric-compatible fonts
+   1. FONTS (metric-compatible: Arimo/Tinos/Cousine)
 ================================================================ */
 async function tryFetchFont(url){
   try{ const r = await fetch(url, { mode:'cors' }); if(!r.ok) return null;
@@ -570,7 +623,7 @@ async function loadMetricFonts(){
 }
 
 /* ================================================================
-   2. Font name cleaning
+   2. FONT NAME CLEANING
 ================================================================ */
 function cleanFontName(raw){
   if(!raw) return { name:'Arial', family:'sans', bold:false, italic:false };
@@ -610,7 +663,7 @@ function cssFamilyFor(f){
 }
 
 /* ================================================================
-   3. Group text items into lines, lines into paragraphs
+   3. GROUP ITEMS → LINES
 ================================================================ */
 function groupItemsIntoLines(items){
   const lines = [];
@@ -663,55 +716,97 @@ function joinItemsText(items){
   return s;
 }
 
+/* ================================================================
+   4. GROUP LINES → PARAGRAPHS
+   KEY FIX: use the MINIMUM gap (not median) as the base line height,
+   so multi-paragraph documents with many breaks don't collapse.
+================================================================ */
 function groupLinesIntoParagraphs(lines){
-  const paras = [];
-  let cur = null;
-  for(const ln of lines){
-    if(!cur){ cur = { lines: [ln] }; continue; }
-    const prev    = cur.lines[cur.lines.length - 1];
-    const gap     = ln.top - prev.bottom;
-    const avgFS   = (ln.fontSize + prev.fontSize) / 2;
-    const leftDiff= Math.abs(ln.left - cur.lines[0].left);
-    const samePara = gap < avgFS * 0.75 && leftDiff < avgFS * 1.5;
-    if(samePara) cur.lines.push(ln);
-    else { paras.push(finalizeParagraph(cur.lines)); cur = { lines: [ln] }; }
+  if(!lines.length) return [];
+
+  // --- measure baseline-to-baseline gaps ---
+  const gaps = [];
+  for(let i = 1; i < lines.length; i++){
+    const g = lines[i].baseline - lines[i-1].baseline;
+    if(g > 0) gaps.push(g);
   }
-  if(cur) paras.push(finalizeParagraph(cur.lines));
+  if(!gaps.length){
+    return [finalizeParagraph(lines)];
+  }
+
+  // MINIMUM gap = single-spaced leading (within-paragraph)
+  const minGap = Math.min(...gaps);
+
+  // Break threshold: a gap of 30% larger than minimum = new paragraph
+  const breakGap = minGap * 1.30;
+
+  const paras = [];
+  let curLines = [lines[0]];
+
+  for(let i = 1; i < lines.length; i++){
+    const prev = lines[i-1];
+    const cur  = lines[i];
+
+    const gap       = cur.baseline - prev.baseline;
+    const sizeRatio = cur.fontSize / Math.max(prev.fontSize, 0.1);
+    const leftDiff  = Math.abs(cur.left - curLines[0].left);
+
+    const gapTooBig   = gap > breakGap;
+    const sizeChanged = sizeRatio > 1.20 || sizeRatio < 0.83;
+    const indentJump  = leftDiff > prev.fontSize * 0.7 && cur.left > prev.left;
+
+    // Sentence boundary: prev ends with .!? and next starts with capital
+    const endsSentence = /[.!?:]["')\]]?\s*$/.test(prev.text.trim());
+    const startsUpper  = /^[A-Z"'(]/.test(cur.text.trim());
+    const gapElevated  = gap > minGap * 1.10;
+    const sentenceBreak = endsSentence && startsUpper && gapElevated
+                        && leftDiff < prev.fontSize * 0.5;
+
+    if(gapTooBig || sizeChanged || indentJump || sentenceBreak){
+      paras.push(finalizeParagraph(curLines));
+      curLines = [cur];
+    } else {
+      curLines.push(cur);
+    }
+  }
+  if(curLines.length) paras.push(finalizeParagraph(curLines));
+
+  console.log(`[paragraphs] lines=${lines.length}, minGap=${minGap.toFixed(1)}, breakGap=${breakGap.toFixed(1)}, paragraphs=${paras.length}`);
   return paras;
 }
 
-/* ---- NEW: detect alignment from the original line edges ---- */
+/* ================================================================
+   5. ALIGNMENT DETECTION
+================================================================ */
 function detectAlignment(lines, fontSize){
-  if(!lines || lines.length === 0) return 'left';
-  if(lines.length === 1) return 'left'; // single-line: cannot infer, default left
-  const tol = Math.max(fontSize * 0.5, 2);
+  if(lines.length <= 1) return 'left';
+  const tol = Math.max(fontSize * 0.6, 3);
 
-  const lefts  = lines.map(l => l.left);
-  const rights = lines.map(l => l.right);
-  const leftsMatch  = lefts.every(l => Math.abs(l - lefts[0]) < tol);
-  const rightsMatch = rights.every(r => Math.abs(r - rights[0]) < tol);
-
-  if(leftsMatch && rightsMatch) return 'left';
-  if(leftsMatch) return 'left';
-  if(rightsMatch) return 'right';
-
-  // center?
+  const lefts   = lines.map(l => l.left);
+  const rights  = lines.map(l => l.right);
   const centers = lines.map(l => (l.left + l.right) / 2);
-  const centersMatch = centers.every(c => Math.abs(c - centers[0]) < tol);
-  if(centersMatch) return 'center';
 
-  // justify? all lines except the last have matching left AND right
+  const leftsMatch   = lefts.every(l  => Math.abs(l - lefts[0])   < tol);
+  const rightsMatch  = rights.every(r => Math.abs(r - rights[0])  < tol);
+  const centersMatch = centers.every(c => Math.abs(c - centers[0]) < tol);
+
+  if(leftsMatch && centersMatch) return 'left';
+  if(centersMatch && !leftsMatch && !rightsMatch) return 'center';
+  if(rightsMatch && !leftsMatch) return 'right';
+
+  // justify: all-but-last line have matching left AND right edges
   if(lines.length > 2){
     const body = lines.slice(0, -1);
-    const bodyLefts  = body.map(l => l.left);
-    const bodyRights = body.map(l => l.right);
-    const blm = bodyLefts.every(l => Math.abs(l - bodyLefts[0]) < tol);
-    const brm = bodyRights.every(r => Math.abs(r - bodyRights[0]) < tol);
-    if(blm && brm) return 'justify';
+    const bl = body.every(l => Math.abs(l.left  - body[0].left)  < tol);
+    const br = body.every(l => Math.abs(l.right - body[0].right) < tol);
+    if(bl && br) return 'justify';
   }
   return 'left';
 }
 
+/* ================================================================
+   6. FINALIZE PARAGRAPH
+================================================================ */
 function finalizeParagraph(lines){
   let text = '';
   for(const ln of lines){
@@ -724,12 +819,14 @@ function finalizeParagraph(lines){
   const top      = Math.min(...lines.map(l => l.top));
   const bottom   = Math.max(...lines.map(l => l.bottom));
   const fontSize = lines.reduce((s, l) => s + l.fontSize, 0) / lines.length;
+
   let lineHeight = fontSize * 1.25;
   if(lines.length > 1){
-    let t = 0;
-    for(let i = 1; i < lines.length; i++) t += lines[i].baseline - lines[i-1].baseline;
-    lineHeight = t / (lines.length - 1);
+    let total = 0;
+    for(let i = 1; i < lines.length; i++) total += lines[i].baseline - lines[i-1].baseline;
+    lineHeight = total / (lines.length - 1);
   }
+
   const alignment = detectAlignment(lines, fontSize);
   return {
     text, left, right, top, bottom,
@@ -737,6 +834,7 @@ function finalizeParagraph(lines){
     height: bottom - top,
     fontSize, lineHeight, alignment,
     font: lines[0].font,
+    lineCount: lines.length,
     originalLines: lines.map(l => ({
       x: l.left, baseline: l.baseline,
       width: l.right - l.left, fontSize: l.fontSize,
@@ -745,7 +843,7 @@ function finalizeParagraph(lines){
 }
 
 /* ================================================================
-   4. Load PDF
+   7. LOAD PDF
 ================================================================ */
 async function loadPdf(arrayBuffer, fileName){
   state.pdfBytes = new Uint8Array(arrayBuffer);
@@ -823,7 +921,7 @@ async function loadPdf(arrayBuffer, fileName){
       el.style.fontFamily = cssFamilyFor(para.font);
       el.style.fontWeight = para.font.bold   ? '700' : '400';
       el.style.fontStyle  = para.font.italic ? 'italic' : 'normal';
-      el.style.textAlign  = para.alignment; // <-- new
+      el.style.textAlign  = para.alignment;
 
       const pstate = {
         ...para, el,
@@ -842,7 +940,6 @@ async function loadPdf(arrayBuffer, fileName){
       el.addEventListener('focus', () => showAlignToolbar(pstate));
       el.addEventListener('blur', () => {
         onInput();
-        // Delay so toolbar clicks can be registered first
         setTimeout(() => {
           const a = document.activeElement;
           if(a && (a === pstate.el || els.alignToolbar.contains(a))) return;
@@ -876,7 +973,7 @@ async function loadPdf(arrayBuffer, fileName){
 }
 
 /* ================================================================
-   5. Editing + alignment toolbar
+   8. EDITING
 ================================================================ */
 function handleParaInput(pageState, para){
   const text = para.el.textContent;
@@ -966,14 +1063,15 @@ function createNewParagraph(pageState, x, y){
   updateStats();
 }
 
-/* ---- NEW: alignment toolbar logic ---- */
+/* ================================================================
+   9. ALIGNMENT TOOLBAR
+================================================================ */
 function showAlignToolbar(para){
   state.focusedPara = para;
   const tb = els.alignToolbar;
-  // Show off-screen first to measure
   tb.style.visibility = 'hidden';
   tb.classList.add('show');
-  const rect = para.el.getBoundingClientRect();
+  const rect   = para.el.getBoundingClientRect();
   const tbRect = tb.getBoundingClientRect();
   const scrollX = window.scrollX || window.pageXOffset;
   const scrollY = window.scrollY || window.pageYOffset;
@@ -981,17 +1079,22 @@ function showAlignToolbar(para){
   let left = rect.left + scrollX;
   const maxLeft = window.innerWidth + scrollX - tbRect.width - 12;
   if(left > maxLeft) left = maxLeft;
+  if(left < scrollX + 12) left = scrollX + 12;
 
-  let top = rect.top + scrollY - tbRect.height - 6;
+  let top = rect.top + scrollY - tbRect.height - 8;
   if(rect.top < tbRect.height + 20){
-    top = rect.bottom + scrollY + 6;   // show below if no room above
+    top = rect.bottom + scrollY + 8;
   }
 
   tb.style.left = left + 'px';
   tb.style.top  = top  + 'px';
   tb.style.visibility = '';
-  tb.querySelectorAll('button').forEach(b =>
-    b.classList.toggle('active', b.dataset.align === para.alignment));
+
+  tb.querySelectorAll('button').forEach(b => {
+    if(b.dataset.align){
+      b.classList.toggle('active', b.dataset.align === para.alignment);
+    }
+  });
 }
 function hideAlignToolbar(){
   state.focusedPara = null;
@@ -1008,25 +1111,137 @@ window.addEventListener('scroll', repositionToolbar, { passive:true });
 
 function applyAlignment(para, align){
   para.alignment = align;
-  para.el.style.textAlign = align;   // 'justify' works natively in CSS
+  para.el.style.textAlign = align;
   para.changed = true;
   para.el.classList.add('changed');
   els.alignToolbar.querySelectorAll('button').forEach(b =>
     b.classList.toggle('active', b.dataset.align === align));
-  // Re-focus the paragraph so editing continues seamlessly
   if(document.activeElement !== para.el) para.el.focus();
   updateStats();
 }
 
-/* Prevent toolbar buttons from stealing focus */
+/* Toolbar buttons */
 els.alignToolbar.addEventListener('mousedown', e => e.preventDefault());
 els.alignToolbar.addEventListener('click', e => {
   const btn = e.target.closest('button');
   if(!btn || !state.focusedPara) return;
-  applyAlignment(state.focusedPara, btn.dataset.align);
+
+  if(btn.dataset.align){
+    applyAlignment(state.focusedPara, btn.dataset.align);
+    return;
+  }
+
+  const action = btn.dataset.action;
+  const para = state.focusedPara;
+  const pageState = state.pages.find(ps => ps.paras.includes(para));
+  if(!pageState) return;
+
+  if(action === 'delete'){
+    if(!confirm('Delete this paragraph?')) return;
+    para.el.remove();
+    pageState.paras = pageState.paras.filter(p => p !== para);
+    relayoutPage(pageState);
+    hideAlignToolbar();
+    updateStats();
+    toast('Paragraph deleted');
+  }
+  else if(action === 'split'){
+    splitParagraphAtCursor(para, pageState);
+  }
+  else if(action === 'merge'){
+    mergeWithNextParagraph(para, pageState);
+  }
 });
 
-/* Keyboard shortcuts: Ctrl+Shift+L/E/R/J */
+function splitParagraphAtCursor(para, pageState){
+  const sel = window.getSelection();
+  if(!sel.rangeCount){ toast('Place your cursor where you want to split'); return; }
+  const range = sel.getRangeAt(0);
+  if(!para.el.contains(range.startContainer)){ toast('Place your cursor inside the paragraph'); return; }
+
+  const fullText = para.el.textContent;
+  const preRange = document.createRange();
+  preRange.setStart(para.el, 0);
+  preRange.setEnd(range.startContainer, range.startOffset);
+  const before = preRange.toString();
+  const after  = fullText.slice(before.length);
+
+  if(!after.trim()){ toast('Nothing to split — cursor is at the end'); return; }
+
+  // Update the current paragraph with text before cursor
+  para.el.textContent = before.trim();
+  para.changed = true;
+  para.el.classList.add('changed');
+  para.currentHeight = Math.max(para.el.offsetHeight, para.lineHeight);
+
+  // Create the new paragraph right below
+  const newTop = para.originalTop + para.currentHeight + 4;
+  const pstate = {
+    el: document.createElement('div'),
+    text: after.trim(),
+    originalText:'', originalLines:[],
+    left: para.left, top: newTop, width: para.width,
+    height: para.lineHeight, fontSize: para.fontSize, lineHeight: para.lineHeight,
+    font: para.font, originalTop: newTop, originalHeight: para.lineHeight,
+    currentHeight: para.lineHeight, alignment: para.alignment,
+    changed: true, isNew: true,
+  };
+  const newEl = pstate.el;
+  newEl.className = 'para changed';
+  newEl.contentEditable = 'true';
+  newEl.spellcheck = false;
+  newEl.textContent = pstate.text;
+  newEl.style.left       = pstate.left + 'px';
+  newEl.style.top        = pstate.top  + 'px';
+  newEl.style.width      = Math.max(pstate.width, 20) + 'px';
+  newEl.style.minHeight  = pstate.lineHeight + 'px';
+  newEl.style.fontSize   = pstate.fontSize + 'px';
+  newEl.style.lineHeight = pstate.lineHeight + 'px';
+  newEl.style.fontFamily = cssFamilyFor(pstate.font);
+  newEl.style.fontWeight = pstate.font.bold   ? '700' : '400';
+  newEl.style.fontStyle  = pstate.font.italic ? 'italic' : 'normal';
+  newEl.style.textAlign  = pstate.alignment;
+
+  const onInput = () => handleParaInput(pageState, pstate);
+  newEl.addEventListener('input', onInput);
+  newEl.addEventListener('focus', () => showAlignToolbar(pstate));
+  newEl.addEventListener('blur', () => {
+    onInput();
+    setTimeout(() => {
+      const a = document.activeElement;
+      if(a && (a === newEl || els.alignToolbar.contains(a))) return;
+      hideAlignToolbar();
+    }, 180);
+  });
+  newEl.addEventListener('keydown', e => { if(e.key === 'Escape') newEl.blur(); });
+
+  pageState.wrap.appendChild(newEl);
+  pageState.paras.push(pstate);
+  relayoutPage(pageState);
+  updateStats();
+  toast('Paragraph split');
+}
+
+function mergeWithNextParagraph(para, pageState){
+  const sorted = [...pageState.paras].sort((a, b) => parseFloat(a.el.style.top) - parseFloat(b.el.style.top));
+  const idx = sorted.indexOf(para);
+  if(idx < 0 || idx === sorted.length - 1){ toast('No paragraph below to merge with'); return; }
+  const next = sorted[idx + 1];
+
+  para.el.textContent = (para.el.textContent || '').trimEnd() + ' ' + (next.el.textContent || '').trimStart();
+  para.changed = true;
+  para.el.classList.add('changed');
+  para.currentHeight = Math.max(para.el.offsetHeight, para.lineHeight);
+
+  next.el.remove();
+  pageState.paras = pageState.paras.filter(p => p !== next);
+
+  relayoutPage(pageState);
+  updateStats();
+  toast('Paragraphs merged');
+}
+
+/* Keyboard shortcuts */
 document.addEventListener('keydown', e => {
   if(!state.focusedPara) return;
   if(!(e.ctrlKey || e.metaKey) || !e.shiftKey) return;
@@ -1039,11 +1254,12 @@ document.addEventListener('keydown', e => {
 });
 
 /* ================================================================
-   6. Stats
+   10. STATS
 ================================================================ */
 function updateStats(){
-  let words = 0, chars = 0, edited = 0;
+  let words = 0, chars = 0, edited = 0, paras = 0;
   for(const ps of state.pages){
+    paras += ps.paras.length;
     for(const para of ps.paras){
       const t = (para.el.textContent || '').trim();
       if(t){ words += t.split(/\s+/).length; chars += t.length; }
@@ -1051,13 +1267,14 @@ function updateStats(){
     }
   }
   els.statPages.textContent  = state.pages.length;
+  els.statParas.textContent  = paras;
   els.statWords.textContent  = words;
   els.statChars.textContent  = chars;
   els.statEdited.textContent = edited;
 }
 
 /* ================================================================
-   7. File input + drag & drop
+   11. FILE INPUT + DRAG & DROP
 ================================================================ */
 els.file.addEventListener('change', async e => {
   const f = e.target.files[0];
@@ -1078,7 +1295,7 @@ els.drop.addEventListener('drop', async e => {
 });
 
 /* ================================================================
-   8. Text helpers
+   12. TEXT HELPERS
 ================================================================ */
 function wrapTextForPdf(text, font, fontSize, maxWidth){
   const words = text.split(/\s+/).filter(Boolean);
@@ -1099,8 +1316,6 @@ function measurePdf(font, text, size){
   try { return font.widthOfTextAtSize(text, size); }
   catch(_) { return text.length * size * 0.55; }
 }
-
-/* Draw a line of text justified across the given width by adding space between words */
 function drawJustifiedLine(op, font, text, size, xStart, targetWidth, y, rgb){
   const words = text.split(/\s+/).filter(Boolean);
   if(words.length < 2){
@@ -1121,7 +1336,7 @@ function drawJustifiedLine(op, font, text, size, xStart, targetWidth, y, rgb){
 }
 
 /* ================================================================
-   9. Build PDF bytes — with alignment-aware drawing
+   13. BUILD PDF BYTES
 ================================================================ */
 async function buildPdfBytes(){
   const { PDFDocument, StandardFonts, rgb } = PDFLib;
@@ -1158,7 +1373,7 @@ async function buildPdfBytes(){
     for(const para of ps.paras){
       if(!para.changed || para.isNew) continue;
 
-      // PASS A — white-out original footprint line by line
+      // White-out original footprint
       for(const ln of para.originalLines){
         const vpTop    = ln.baseline - ln.fontSize * 1.05;
         const vpBottom = ln.baseline + ln.fontSize * 0.35;
@@ -1172,7 +1387,6 @@ async function buildPdfBytes(){
         });
       }
 
-      // PASS B — draw new text at the correct position for the paragraph's alignment
       const text = (para.el.textContent || '').replace(/\s+/g, ' ').trim();
       if(!text) continue;
 
@@ -1201,12 +1415,8 @@ async function buildPdfBytes(){
         const isLast = (j === wrapped.length - 1);
 
         let x = paraLeftPt;
-
-        if(align === 'right'){
-          x = paraLeftPt + paraWidthPt - lineWidth;
-        } else if(align === 'center'){
-          x = paraLeftPt + (paraWidthPt - lineWidth) / 2;
-        }
+        if(align === 'right')  x = paraLeftPt + paraWidthPt - lineWidth;
+        else if(align === 'center') x = paraLeftPt + (paraWidthPt - lineWidth) / 2;
 
         const y = firstBaselinePdf - j * lineHeightPt;
 
@@ -1222,12 +1432,11 @@ async function buildPdfBytes(){
       }
     }
   }
-
   return await outDoc.save();
 }
 
 /* ================================================================
-   10. Preview modal
+   14. PREVIEW MODAL
 ================================================================ */
 let currentPreviewBlob = null;
 function showPreview(blob){
@@ -1257,7 +1466,7 @@ els.previewDownload.addEventListener('click', () => {
 });
 
 /* ================================================================
-   11. Save as PDF
+   15. SAVE AS PDF
 ================================================================ */
 els.exportPdf.addEventListener('click', async () => {
   if(!state.pdfDoc) return;
@@ -1276,7 +1485,7 @@ els.exportPdf.addEventListener('click', async () => {
 });
 
 /* ================================================================
-   12. Save as DOCX
+   16. SAVE AS DOCX
 ================================================================ */
 els.exportDocx.addEventListener('click', async () => {
   if(!state.pdfDoc) return;
@@ -1336,7 +1545,7 @@ els.exportDocx.addEventListener('click', async () => {
 });
 
 /* ================================================================
-   13. Boot
+   17. BOOT
 ================================================================ */
 (async () => { state.fonts = await loadMetricFonts(); })();
 </script>
