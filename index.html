@@ -5,7 +5,7 @@
 <meta name="viewport" content="width=device-width, initial-scale=1" />
 
 <title>Free PDF Editor — Edit Text in Any PDF Online (No Sign-Up, No Subscription)</title>
-<meta name="description" content="Free browser-based PDF editor. Edit text inside any PDF like Word — click any line, edit it, keep original alignment. Save as PDF or DOCX. No sign-up, no subscription, no uploads. Your file never leaves your device." />
+<meta name="description" content="Free browser-based PDF editor. Upload any PDF, edit text like in Word with real paragraph reflow. Change alignment, add new text anywhere. Save as PDF or DOCX. No sign-up, no subscription, no uploads." />
 <meta name="keywords" content="free pdf editor, edit pdf online, pdf text editor, edit pdf without subscription, browser pdf editor, online pdf editor free, edit pdf like word, free pdf editor no sign up, pdf editor no watermark" />
 <meta name="robots" content="index, follow, max-image-preview:large" />
 <meta name="author" content="Arafat Khan" />
@@ -14,7 +14,7 @@
 
 <meta property="og:type" content="website" />
 <meta property="og:title" content="Free PDF Editor — Edit Text in Any PDF Online" />
-<meta property="og:description" content="Edit text in any PDF like Word. Free, private, browser-based. No subscription, no sign-up, no uploads." />
+<meta property="og:description" content="Upload any PDF and edit it like a Word document. Free, private, browser-based." />
 <meta property="og:url" content="https://pdfeditnow.pages.dev/" />
 <meta property="og:site_name" content="FreePDF Editor" />
 <meta property="og:image" content="https://pdfeditnow.pages.dev/preview.png" />
@@ -24,7 +24,7 @@
 
 <meta name="twitter:card" content="summary_large_image" />
 <meta name="twitter:title" content="Free PDF Editor — Edit Text in Any PDF" />
-<meta name="twitter:description" content="Free browser-based PDF editor. No subscription, no sign-up, no uploads." />
+<meta name="twitter:description" content="Free browser-based PDF editor. Edit any PDF like Word. No subscription." />
 <meta name="twitter:image" content="https://pdfeditnow.pages.dev/preview.png" />
 
 <link rel="icon" href="data:image/svg+xml,<svg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 100 100'><rect width='100' height='100' rx='20' fill='%233b5bdb'/><text x='50' y='68' font-size='56' font-family='Arial,sans-serif' font-weight='bold' fill='white' text-anchor='middle'>P</text></svg>" />
@@ -36,7 +36,7 @@
   "name": "FreePDF Editor",
   "applicationCategory": "UtilitiesApplication",
   "operatingSystem": "Web",
-  "description": "Free browser-based PDF editor. Edit text in any PDF like Word — no sign-up, no subscription, no uploads.",
+  "description": "Free browser-based PDF editor. Edit any PDF like a Word document.",
   "url": "https://pdfeditnow.pages.dev/",
   "browserRequirements": "Requires JavaScript",
   "author": {
@@ -50,9 +50,10 @@
   },
   "offers": { "@type": "Offer", "price": "0", "priceCurrency": "USD" },
   "featureList": [
-    "Edit text in any PDF, line by line",
-    "Preserves original alignment automatically",
-    "Left, center, right, and justified support",
+    "Upload any PDF and edit it like Word",
+    "Real paragraph reflow — delete text, the rest pulls up",
+    "Add text anywhere by double-clicking",
+    "Change alignment: left, center, right, justify",
     "Day and night theme",
     "Save as PDF or DOCX",
     "100% browser-based, no uploads"
@@ -69,7 +70,7 @@
 
 <div class="sr-only">
   <h1>Free PDF Editor — Edit Text in Any PDF Online</h1>
-  <p>FreePDF Editor is a browser-based PDF editor that lets you edit text inside any PDF like Word. No sign-up, no subscription, no uploads.</p>
+  <p>Upload any PDF and edit it like a Word document. Real paragraph reflow, alignment controls, add text anywhere.</p>
 </div>
 
 <div class="align-toolbar" id="alignToolbar" role="toolbar" aria-label="Text alignment">
@@ -86,7 +87,7 @@
     <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round"><line x1="3" y1="6" x2="21" y2="6"/><line x1="3" y1="12" x2="21" y2="12"/><line x1="3" y1="18" x2="21" y2="18"/></svg>
   </button>
   <div class="sep"></div>
-  <button data-action="delete" title="Delete this line" aria-label="Delete line">
+  <button data-action="delete" title="Delete this paragraph" aria-label="Delete paragraph">
     <svg viewBox="0 0 24 24" fill="none" stroke="#dc2626" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M3 6h18"/><path d="M8 6V4a2 2 0 0 1 2-2h4a2 2 0 0 1 2 2v2"/><path d="M19 6l-1 14a2 2 0 0 1-2 2H8a2 2 0 0 1-2-2L5 6"/></svg>
   </button>
 </div>
@@ -96,27 +97,26 @@
 
   <div class="side-section">
     <h2>How to use</h2>
-    <div class="step"><div class="n">1</div><div class="t"><b>Open your PDF</b><small>Click "Open PDF" or drag a file onto the page.</small></div></div>
-    <div class="step"><div class="n">2</div><div class="t"><b>Click any line of text</b><small>Each line is independently editable.</small></div></div>
-    <div class="step"><div class="n">3</div><div class="t"><b>Type or delete</b><small>Text after the edit slides left/right automatically.</small></div></div>
-    <div class="step"><div class="n">4</div><div class="t"><b>Preview &amp; save</b><small>Click "Save as PDF" — preview first, then download.</small></div></div>
+    <div class="step"><div class="n">1</div><div class="t"><b>Open your PDF</b><small>Click "Open PDF" or drag a file. It converts to an editable document.</small></div></div>
+    <div class="step"><div class="n">2</div><div class="t"><b>Click any paragraph</b><small>Edit like in Word. Delete text and the rest flows up.</small></div></div>
+    <div class="step"><div class="n">3</div><div class="t"><b>Add new text anywhere</b><small>Double-click empty space to start a new paragraph.</small></div></div>
+    <div class="step"><div class="n">4</div><div class="t"><b>Preview &amp; save</b><small>Save as PDF or DOCX with original alignment preserved.</small></div></div>
   </div>
 
   <div class="side-section">
     <h2>Tips</h2>
-    <p>· Every line is its own box. Original alignment is preserved automatically.</p>
-    <p>· Change alignment with the floating toolbar or <span class="kbd">Ctrl+Shift</span>+<span class="kbd">L</span>/<span class="kbd">E</span>/<span class="kbd">R</span>/<span class="kbd">J</span>.</p>
-    <p>· Double-click empty space to add a new line.</p>
-    <label class="outline-toggle"><input type="checkbox" id="showOutlines" /><span>Show line outlines</span></label>
+    <p>· Text reflows like in Word. Delete a word — the rest pulls up.</p>
+    <p>· Change alignment with the toolbar or <span class="kbd">Ctrl+Shift+L</span>/<span class="kbd">E</span>/<span class="kbd">R</span>/<span class="kbd">J</span>.</p>
+    <label class="outline-toggle"><input type="checkbox" id="showOutlines" /><span>Show paragraph outlines</span></label>
   </div>
 
   <div class="side-section">
     <h2>Document stats</h2>
     <div class="stat-row"><span class="k">Pages</span><span class="v" id="statPages">0</span></div>
-    <div class="stat-row"><span class="k">Editable lines</span><span class="v" id="statLines">0</span></div>
+    <div class="stat-row"><span class="k">Paragraphs</span><span class="v" id="statParas">0</span></div>
     <div class="stat-row"><span class="k">Words</span><span class="v" id="statWords">0</span></div>
     <div class="stat-row"><span class="k">Characters</span><span class="v" id="statChars">0</span></div>
-    <div class="stat-row"><span class="k">Edited lines</span><span class="v" id="statEdited">0</span></div>
+    <div class="stat-row"><span class="k">Edited</span><span class="v" id="statEdited">0</span></div>
     <div class="stat-row"><span class="k">Fonts loaded</span><span class="v" id="statFonts">—</span></div>
   </div>
 
@@ -160,8 +160,8 @@
   <div class="viewport" id="viewport">
     <div id="drop" class="drop">
       <h2>Drop a PDF here, or click "Open PDF"</h2>
-      <p>Everything runs in your browser — your file never leaves your device.</p>
-      <p class="seo-hint">Free online PDF editor — no sign-up, no subscription, no watermark.<br>Edit text in any PDF like Word. Save as PDF or DOCX.</p>
+      <p>Your PDF becomes an editable document — like Word, but for PDFs.</p>
+      <p class="seo-hint">Free online PDF editor — no sign-up, no subscription, no watermark.<br>Real paragraph reflow. Alignment preserved. Save as PDF or DOCX.</p>
     </div>
     <div id="pages"></div>
   </div>
@@ -170,15 +170,12 @@
 <div class="modal" id="previewModal">
   <div class="modal-card">
     <div class="modal-head">
-      <h3>Preview</h3>
-      <span class="meta" id="previewMeta"></span>
-      <span class="spacer"></span>
+      <h3>Preview</h3><span class="meta" id="previewMeta"></span><span class="spacer"></span>
       <button id="previewClose" class="ghost">✕ Close</button>
     </div>
     <div class="modal-body"><iframe id="previewFrame" title="PDF preview"></iframe></div>
     <div class="modal-foot">
-      <small>If the preview looks correct, click Download.</small>
-      <span class="spacer"></span>
+      <small>If the preview looks correct, click Download.</small><span class="spacer"></span>
       <button id="previewCancel">← Back to editing</button>
       <button id="previewDownload" class="primary">⬇ Download PDF</button>
     </div>
