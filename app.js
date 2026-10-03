@@ -93,8 +93,7 @@ async function loadMetricFonts(){
     if(buf){ out[k] = buf; loaded++; }
   }
 
-  /* Register Latin Modern Roman (LaTeX Computer Modern successor) as a web font.
-     This makes LaTeX-generated PDFs render with the exact same family. */
+  /* Register Latin Modern Roman (LaTeX Computer Modern successor) */
   const lmSources = [
     {
       regular: 'https://cdn.jsdelivr.net/npm/@fontsource/latin-modern-roman@5.0.8/files/latin-modern-roman-latin-400-normal.woff',
@@ -169,7 +168,6 @@ function cleanFontName(raw){
   if(!n || n.length > 60) n = 'Arial';
 
   let family = 'sans';
-  // Broaden serif detection — includes LaTeX-specific names
   if(/times|georgia|garamond|cambria|serif|book|rom|cmr|cmm|lmodern|lmroman|computer\s*modern|latin\s*modern|nimbus|minion|charter|palatino|century|didot|bodoni|baskerville|caslon|libertine|garalde|antiqua|liberation\s*serif/i.test(n)){
     family = 'serif';
   }
@@ -194,7 +192,6 @@ function isLatexFont(rawName){
 
 function cssFamilyFor(f){
   const rawName = (f && (f.raw || f.name)) || '';
-  // LaTeX PDFs (arXiv papers, theses, conference papers) → Latin Modern
   if(isLatexFont(rawName)){
     return '"Latin Modern Roman", "Computer Modern", "Libertinus Serif", Georgia, "Times New Roman", Times, serif';
   }
@@ -587,7 +584,6 @@ async function buildPdfBytes(){
     for(const l of ps.lines){
       if(!l.changed) continue;
 
-      /* white-out the original line */
       const vpTop    = l.originalBaseline - l.fontSize * 1.10;
       const vpBottom = l.originalBaseline + l.fontSize * 0.35;
       const pdfY     = ph - vpBottom * sy;
@@ -670,7 +666,7 @@ els.exportPdf.addEventListener('click', async () => {
 });
 
 /* ================================================================
-   12. CONVERT TO DOCX
+   12. EXPORT DOCX — layout-preserving table technique
    ================================================================ */
 els.exportDocx.addEventListener('click', async () => {
   if(!state.pdfDoc) return;
@@ -678,61 +674,110 @@ els.exportDocx.addEventListener('click', async () => {
   els.exportDocx.disabled = true;
   toast('Building DOCX…');
   try{
-    const { Document, Packer, Paragraph, TextRun, AlignmentType } = docx;
+    const {
+      Document, Packer, Paragraph, TextRun, AlignmentType,
+      Table, TableRow, TableCell, WidthType, BorderStyle, HeightRule,
+      VerticalAlign,
+    } = docx;
+
+    const alignMap = {
+      left:    AlignmentType.LEFT,
+      right:   AlignmentType.RIGHT,
+      center:  AlignmentType.CENTER,
+      justify: AlignmentType.JUSTIFIED,
+    };
+
+    /* No-border spec used everywhere (invisible table = clean page) */
+    const noBorder = { style: BorderStyle.NONE, size: 0, color: 'FFFFFF' };
+    const noBorders = {
+      top: noBorder, bottom: noBorder, left: noBorder, right: noBorder,
+      insideHorizontal: noBorder, insideVertical: noBorder,
+    };
+
     const children = [];
-    const alignMap = { left: AlignmentType.LEFT, right: AlignmentType.RIGHT, center: AlignmentType.CENTER, justify: AlignmentType.JUSTIFIED };
 
     for(let p = 0; p < state.pages.length; p++){
       const ps = state.pages[p];
-      children.push(new Paragraph({
-        children: [ new TextRun({ text: `— Page ${p+1} —`, bold: true, size: 22, color: '808080' }) ],
-        spacing: { after: 200 },
-      }));
+      const pageWidthTwips = Math.round(ps.pdfWidth * 20);   // 1pt = 20 twips
 
-      const sorted = [...ps.lines].sort((a, b) => a.originalBaseline - b.originalBaseline);
-      let cur = null;
-      const paragraphs = [];
-
-      for(let i = 0; i < sorted.length; i++){
-        const l = sorted[i];
-        const text = (l.el.textContent || '').trim();
-        if(!text){ cur = null; continue; }
-
-        const prev = i > 0 ? sorted[i-1] : null;
-        const gap = prev ? (l.originalBaseline - prev.originalBaseline) : 999;
-        const newPara = !prev || gap > l.fontSize * 1.6 || l.alignment !== prev.alignment ||
-                        Math.abs(l.fontSize - prev.fontSize) > 2;
-
-        if(newPara || !cur){
-          if(cur) paragraphs.push(cur);
-          cur = { alignment: l.alignment, fontSize: l.fontSize, font: l.font, parts: [text] };
-        } else {
-          cur.parts.push(text);
-        }
+      if(p > 0){
+        children.push(new Paragraph({ children: [], pageBreakBefore: true }));
       }
-      if(cur) paragraphs.push(cur);
 
-      for(const para of paragraphs){
-        const text = para.parts.join(' ');
-        if(!text.trim()) continue;
-        children.push(new Paragraph({
-          alignment: alignMap[para.alignment] || AlignmentType.LEFT,
+      /* Sort lines by baseline so rows are in visual order */
+      const sorted = [...ps.lines].sort((a, b) => a.originalBaseline - b.originalBaseline);
+
+      const rows = [];
+      let prevBaseline = 0;
+
+      for(const line of sorted){
+        const text = (line.el.textContent || '').replace(/\s+/g, ' ').trim();
+
+        const baselinePt = line.originalBaseline;
+        const gapPt = Math.max(baselinePt - prevBaseline, 0);
+        prevBaseline = baselinePt;
+
+        /* Row height in twips — exact distance from the previous line */
+        const rowHeightTwips = Math.max(Math.round(gapPt * 20), 200);   // min 10pt
+
+        const cellPara = new Paragraph({
+          alignment: alignMap[line.alignment] || AlignmentType.LEFT,
+          spacing: { before: 0, after: 0, line: Math.round(line.fontSize * 1.15 * 20) },
           children: [ new TextRun({
-            text,
-            font: para.font.name,
-            bold: para.font.bold,
-            italics: para.font.italic,
-            size: Math.max(8, Math.min(72, Math.round(para.fontSize * 2))),
+            text: text || ' ',
+            font: line.font.name,
+            bold: line.font.bold,
+            italics: line.font.italic,
+            size: Math.max(8, Math.min(96, Math.round(line.fontSize * 2))),
           }) ],
-          spacing: { after: 120 },
+        });
+
+        rows.push(new TableRow({
+          height: { value: rowHeightTwips, rule: HeightRule.EXACT },
+          children: [ new TableCell({
+            width: { size: pageWidthTwips, type: WidthType.DXA },
+            margins: { top: 0, bottom: 0, left: 0, right: 0 },
+            borders: {
+              top: noBorder, bottom: noBorder, left: noBorder, right: noBorder,
+            },
+            verticalAlign: VerticalAlign.TOP,
+            children: [ cellPara ],
+          }) ],
+        }));
+      }
+
+      if(rows.length){
+        children.push(new Table({
+          width: { size: pageWidthTwips, type: WidthType.DXA },
+          columnWidths: [pageWidthTwips],
+          borders: noBorders,
+          rows: rows,
         }));
       }
     }
 
-    const doc = new Document({ sections: [{ children }] });
+    const page0 = state.pages[0] || { pdfWidth: 595, pdfHeight: 842 };
+    const doc = new Document({
+      creator: 'FreePDF Editor',
+      title: 'Edited PDF',
+      description: 'Converted from PDF by FreePDF Editor',
+      sections: [{
+        properties: {
+          page: {
+            size: {
+              width:  Math.round(page0.pdfWidth  * 20),
+              height: Math.round(page0.pdfHeight * 20),
+            },
+            margin: { top: 0, right: 0, bottom: 0, left: 0 },
+          },
+        },
+        children,
+      }],
+    });
+
     const blob = await Packer.toBlob(doc);
     downloadBlob(blob, 'edited.docx');
-    toast('Saved as DOCX ✔ — open in Word for full editing');
+    toast('Saved as DOCX ✔ — layout preserved');
   }catch(err){
     console.error(err);
     toast('DOCX export failed: ' + (err?.message || err), 5000);
