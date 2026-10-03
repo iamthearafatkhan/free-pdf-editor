@@ -95,7 +95,12 @@ button:disabled{opacity:.5;cursor:not-allowed;box-shadow:none;}
 .page{position:relative;background:var(--page-bg);box-shadow:var(--shadow);border-radius:8px;overflow:hidden;}
 .page canvas{display:block;}
 
-/* Editable paragraph — wraps like Word */
+/* ============================================================
+   Editable paragraph
+   - Not changed → text invisible (PDF canvas shows the original)
+   - Focused but unchanged → subtle outline, text still invisible
+   - Changed → white-out + our text on top
+   ============================================================ */
 .para{
   position:absolute;margin:0;padding:2px 3px;
   color:transparent;background:transparent;
@@ -105,17 +110,43 @@ button:disabled{opacity:.5;cursor:not-allowed;box-shadow:none;}
   z-index:5;
   caret-color:#000;
   box-sizing:border-box;
+  letter-spacing:0;
+  word-spacing:0;
+  font-kerning:normal;
+  text-rendering:geometricPrecision;
 }
-.para:hover{border-color:rgba(59,91,219,.4);background:rgba(59,91,219,.04);}
-.para:focus{color:#000;background:#fff;border-color:var(--brand);box-shadow:0 0 0 2px rgba(59,91,219,.2);z-index:9999;}
-.para.changed{color:#000;background:transparent;border-color:transparent;}
-.para.changed:hover{border-color:rgba(59,91,219,.35);background:rgba(59,91,219,.04);}
-.para.changed:focus{background:#fff;border-color:var(--brand);}
+.para:hover{
+  border-color:rgba(59,91,219,.4);
+  background:rgba(59,91,219,.04);
+}
+/* KEY: keep text transparent when focused but unchanged */
+.para:focus{
+  color:transparent;
+  background:rgba(59,91,219,.06);
+  border-color:var(--brand);
+  box-shadow:0 0 0 2px rgba(59,91,219,.18);
+  z-index:9999;
+}
+/* Once changed, show our text on white to hide the PDF canvas underneath */
+.para.changed{
+  color:#000;
+  background:#fff;
+  border-color:transparent;
+}
+.para.changed:hover{
+  border-color:rgba(59,91,219,.35);
+}
+.para.changed:focus{
+  color:#000;
+  background:#fff;
+  border-color:var(--brand);
+  box-shadow:0 0 0 2px rgba(59,91,219,.2);
+}
 
 .show-outlines .para{border:1px dashed var(--outline-border);background:var(--outline-bg);}
 .show-outlines .para.changed{border-color:var(--changed-border);background:var(--changed-bg);}
 
-.align-toolbar{position:fixed;background:var(--panel);border:1px solid var(--border);border-radius:10px;padding:4px;display:none;gap:2px;box-shadow:0 10px 30px rgba(16,24,40,.25);z-index:100000;user-select:none;}
+.align-toolbar{position:fixed;background:var(--panel);border:1px solid var(--border);border-radius:10px;padding:4px;display:none;gap:2px;box-shadow:0 10px 30px rgba(16,24,40,.25);z-index:100000;user-select:none;align-items:center;}
 .align-toolbar.show{display:flex;}
 .align-toolbar button{padding:7px;border:none;background:transparent;border-radius:6px;color:var(--muted);cursor:pointer;display:inline-flex;align-items:center;justify-content:center;font-size:0;min-width:32px;min-height:32px;}
 .align-toolbar button:hover{background:var(--hover-bg);color:var(--brand);}
@@ -123,6 +154,16 @@ button:disabled{opacity:.5;cursor:not-allowed;box-shadow:none;}
 .align-toolbar button.active:hover{background:var(--brand-2);color:#fff;}
 .align-toolbar svg{width:16px;height:16px;display:block;}
 .align-toolbar .sep{width:1px;background:var(--border);margin:4px 3px;align-self:stretch;}
+
+.font-picker{display:inline-flex;align-items:center;gap:4px;padding:0 6px 0 4px;border-radius:6px;}
+.font-picker .font-label{font-size:11px;color:var(--muted);text-transform:uppercase;letter-spacing:.06em;font-weight:600;}
+.font-picker select{
+  font:inherit;font-size:12px;padding:5px 6px;
+  background:var(--input-bg);color:var(--ink);
+  border:1px solid var(--border);border-radius:6px;cursor:pointer;
+  max-width:150px;
+}
+.font-picker select:focus{outline:none;border-color:var(--brand);}
 
 .sr-only{position:absolute;width:1px;height:1px;padding:0;margin:-1px;overflow:hidden;clip:rect(0,0,0,0);white-space:nowrap;border:0;}
 
