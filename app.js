@@ -49,6 +49,8 @@ function downloadBlob(blob, filename){
 }
 
 document.getElementById('year').textContent = new Date().getFullYear();
+
+/* ---------- Theme ---------- */
 function applyTheme(t){
   document.documentElement.setAttribute('data-theme', t);
   try{ localStorage.setItem('pdfedit-theme', t); }catch(_){}
@@ -64,19 +66,25 @@ els.themeToggle.addEventListener('click', () => {
   applyTheme(cur === 'dark' ? 'light' : 'dark');
 });
 
-/* ---------- Metric fonts ---------- */
+/* ================================================================
+   1. LOAD FONTS — metric-compatible + Latin Modern (LaTeX)
+   ================================================================ */
 async function tryFetchFont(url){
-  try{ const r = await fetch(url, { mode:'cors' }); if(!r.ok) return null;
-       return await r.arrayBuffer(); }catch(_){ return null; }
+  try{
+    const r = await fetch(url, { mode:'cors' });
+    if(!r.ok) return null;
+    return await r.arrayBuffer();
+  }catch(_){ return null; }
 }
+
 async function loadMetricFonts(){
   const urls = {
-    'sans-regular': 'https://cdn.jsdelivr.net/npm/@fontsource/arimo/files/arimo-latin-400-normal.woff',
-    'sans-bold': 'https://cdn.jsdelivr.net/npm/@fontsource/arimo/files/arimo-latin-700-normal.woff',
+    'sans-regular':  'https://cdn.jsdelivr.net/npm/@fontsource/arimo/files/arimo-latin-400-normal.woff',
+    'sans-bold':     'https://cdn.jsdelivr.net/npm/@fontsource/arimo/files/arimo-latin-700-normal.woff',
     'serif-regular': 'https://cdn.jsdelivr.net/npm/@fontsource/tinos/files/tinos-latin-400-normal.woff',
-    'serif-bold': 'https://cdn.jsdelivr.net/npm/@fontsource/tinos/files/tinos-latin-700-normal.woff',
-    'mono-regular': 'https://cdn.jsdelivr.net/npm/@fontsource/cousine/files/cousine-latin-400-normal.woff',
-    'mono-bold': 'https://cdn.jsdelivr.net/npm/@fontsource/cousine/files/cousine-latin-700-normal.woff',
+    'serif-bold':    'https://cdn.jsdelivr.net/npm/@fontsource/tinos/files/tinos-latin-700-normal.woff',
+    'mono-regular':  'https://cdn.jsdelivr.net/npm/@fontsource/cousine/files/cousine-latin-400-normal.woff',
+    'mono-bold':     'https://cdn.jsdelivr.net/npm/@fontsource/cousine/files/cousine-latin-700-normal.woff',
   };
   const out = {}; let loaded = 0;
   for(const [k, u] of Object.entries(urls)){
@@ -84,15 +92,63 @@ async function loadMetricFonts(){
     if(!buf) buf = await tryFetchFont(u.replace('.woff', '.ttf'));
     if(buf){ out[k] = buf; loaded++; }
   }
-  els.statFonts.textContent = `${loaded}/6`;
+
+  /* Register Latin Modern Roman (LaTeX Computer Modern successor) as a web font.
+     This makes LaTeX-generated PDFs render with the exact same family. */
+  const lmSources = [
+    {
+      regular: 'https://cdn.jsdelivr.net/npm/@fontsource/latin-modern-roman@5.0.8/files/latin-modern-roman-latin-400-normal.woff',
+      bold:    'https://cdn.jsdelivr.net/npm/@fontsource/latin-modern-roman@5.0.8/files/latin-modern-roman-latin-700-normal.woff',
+      italic:  'https://cdn.jsdelivr.net/npm/@fontsource/latin-modern-roman@5.0.8/files/latin-modern-roman-latin-400-italic.woff',
+      boldItalic: 'https://cdn.jsdelivr.net/npm/@fontsource/latin-modern-roman@5.0.8/files/latin-modern-roman-latin-700-italic.woff',
+    },
+    {
+      regular: 'https://cdn.jsdelivr.net/gh/alerque/libertinus@master/fonts/webfonts/LibertinusSerif-Regular.woff2',
+      bold:    'https://cdn.jsdelivr.net/gh/alerque/libertinus@master/fonts/webfonts/LibertinusSerif-Bold.woff2',
+      italic:  'https://cdn.jsdelivr.net/gh/alerque/libertinus@master/fonts/webfonts/LibertinusSerif-Italic.woff2',
+      boldItalic: 'https://cdn.jsdelivr.net/gh/alerque/libertinus@master/fonts/webfonts/LibertinusSerif-BoldItalic.woff2',
+    },
+  ];
+
+  let lmLoaded = false;
+  for(const src of lmSources){
+    try{
+      const faces = [
+        new FontFace('Latin Modern Roman', `url(${src.regular})`,    { weight:'400', style:'normal' }),
+        new FontFace('Latin Modern Roman', `url(${src.bold})`,       { weight:'700', style:'normal' }),
+        new FontFace('Latin Modern Roman', `url(${src.italic})`,     { weight:'400', style:'italic' }),
+        new FontFace('Latin Modern Roman', `url(${src.boldItalic})`, { weight:'700', style:'italic' }),
+      ];
+      let allOk = true;
+      for(const f of faces){
+        try{ await f.load(); document.fonts.add(f); }
+        catch(e){ allOk = false; break; }
+      }
+      if(allOk){
+        lmLoaded = true;
+        console.log('✓ Latin Modern Roman registered as a web font');
+        break;
+      }
+    }catch(e){
+      console.warn('Latin Modern source failed, trying fallback:', e);
+    }
+  }
+  if(!lmLoaded){
+    console.warn('Latin Modern Roman could not be loaded — LaTeX PDFs will use Georgia/Times fallback');
+  }
+
+  els.statFonts.textContent = lmLoaded ? `${loaded}/6 + LM` : `${loaded}/6`;
   return out;
 }
 
-/* ---------- Font cleanup ---------- */
+/* ================================================================
+   2. FONT NAME DETECTION + CSS FAMILY
+   ================================================================ */
 function cleanFontName(raw){
   if(!raw) return { name:'Arial', family:'sans', bold:false, italic:false, raw:'' };
   const rawClean = String(raw).replace(/^[A-Z]{6}\+/, '');
   let n = rawClean;
+
   const map = {
     'ArialMT':'Arial','Arial-BoldMT':'Arial','Arial-ItalicMT':'Arial','Arial-BoldItalicMT':'Arial','Arial':'Arial',
     'Helvetica':'Helvetica','Helvetica-Bold':'Helvetica',
@@ -102,32 +158,58 @@ function cleanFontName(raw){
     'Calibri':'Calibri','Calibri-Bold':'Calibri',
     'Cambria':'Cambria','Georgia':'Georgia','Verdana':'Verdana',
   };
-  const bold = /bold|black|heavy|semibold/i.test(n);
+
+  const bold   = /bold|black|heavy|semibold/i.test(n);
   const italic = /italic|oblique|ital/i.test(n);
+
   if(map[n]) n = map[n];
   else n = n.replace(/[-_,](Bold|Italic|Oblique|Regular|MT|PS|Light|Medium|Semibold|Black|Heavy).*$/i,'')
            .replace(/([a-z])([A-Z])/g,'$1 $2').trim();
-  if(!n || n.length > 40) n = 'Arial';
+
+  if(!n || n.length > 60) n = 'Arial';
+
   let family = 'sans';
-  if(/times|georgia|garamond|cambria|serif|book/i.test(n)) family = 'serif';
-  if(/courier|mono|consol|typewriter/i.test(n)) family = 'mono';
+  // Broaden serif detection — includes LaTeX-specific names
+  if(/times|georgia|garamond|cambria|serif|book|rom|cmr|cmm|lmodern|lmroman|computer\s*modern|latin\s*modern|nimbus|minion|charter|palatino|century|didot|bodoni|baskerville|caslon|libertine|garalde|antiqua|liberation\s*serif/i.test(n)){
+    family = 'serif';
+  }
+  if(/courier|mono|consol|typewriter/i.test(n)){
+    family = 'mono';
+  }
+
   return { name:n, family, bold, italic, raw: rawClean };
 }
+
 function metricKeyFor(f){
   if(f.family === 'serif') return f.bold ? 'serif-bold' : 'serif-regular';
-  if(f.family === 'mono') return f.bold ? 'mono-bold' : 'mono-regular';
+  if(f.family === 'mono')  return f.bold ? 'mono-bold'  : 'mono-regular';
   return f.bold ? 'sans-bold' : 'sans-regular';
 }
+
+function isLatexFont(rawName){
+  if(!rawName) return false;
+  return /cmr|cmm|cmbx|cmti|cmss|cmsy|lmodern|lmroman|lmsans|lmmono|computer\s*modern|latin\s*modern|nimbusrom|nimbus\s*rom|libertinus/i
+    .test(String(rawName));
+}
+
 function cssFamilyFor(f){
+  const rawName = (f && (f.raw || f.name)) || '';
+  // LaTeX PDFs (arXiv papers, theses, conference papers) → Latin Modern
+  if(isLatexFont(rawName)){
+    return '"Latin Modern Roman", "Computer Modern", "Libertinus Serif", Georgia, "Times New Roman", Times, serif';
+  }
   if(f.family === 'serif') return 'Georgia, "Times New Roman", Times, serif';
-  if(f.family === 'mono') return '"Courier New", Courier, monospace';
+  if(f.family === 'mono')  return '"Courier New", Courier, monospace';
   return 'Arial, Helvetica, sans-serif';
 }
 
-/* ---------- Group items into lines ---------- */
+/* ================================================================
+   3. GROUP TEXT ITEMS INTO LINES
+   ================================================================ */
 function groupItemsIntoLines(items){
   const lines = [];
   const sorted = [...items].sort((a,b) => a.top - b.top);
+
   for(const it of sorted){
     const h = Math.max(it.bottom - it.top, 1);
     let best = null, bestScore = 0;
@@ -147,6 +229,7 @@ function groupItemsIntoLines(items){
       lines.push({ items:[it], top:it.top, bottom:it.bottom, left:it.left, right:it.right });
     }
   }
+
   for(const ln of lines){
     ln.items.sort((a,b) => a.left - b.left);
     ln.text = joinItemsText(ln.items);
@@ -157,6 +240,7 @@ function groupItemsIntoLines(items){
   lines.sort((a,b) => a.top - b.top);
   return lines;
 }
+
 function joinItemsText(items){
   let s = '';
   for(let i = 0; i < items.length; i++){
@@ -171,31 +255,36 @@ function joinItemsText(items){
   return s;
 }
 
-/* ---------- Detect alignment from a group of lines ---------- */
+/* ================================================================
+   4. ALIGNMENT DETECTION
+   ================================================================ */
 function detectAlignmentForLine(line, allLines, fontSize){
-  // find neighbouring lines (same "paragraph": within 1.6× line-height above and below)
   const lineHeight = fontSize * 1.25;
   const group = allLines.filter(l =>
     Math.abs(l.baseline - line.baseline) < lineHeight * 12
   );
   if(group.length < 2) return 'left';
+
   const tol = Math.max(fontSize * 0.7, 3);
   const lefts  = group.map(l => l.left);
   const rights = group.map(l => l.right);
+
   const leftsMatch  = lefts.every(l => Math.abs(l - lefts[0]) < tol);
   const rightsMatch = rights.every(r => Math.abs(r - rights[0]) < tol);
+
   if(leftsMatch && !rightsMatch) return 'left';
   if(rightsMatch && !leftsMatch) return 'right';
   if(leftsMatch && rightsMatch) return 'left';
-  // center?
+
   const centers = group.map(l => (l.left + l.right) / 2);
   const centersMatch = centers.every(c => Math.abs(c - centers[0]) < tol);
   if(centersMatch) return 'center';
+
   return 'left';
 }
 
 /* ================================================================
-   LOAD PDF
+   5. LOAD PDF
    ================================================================ */
 async function loadPdf(arrayBuffer, fileName){
   state.pdfBytes = new Uint8Array(arrayBuffer);
@@ -211,7 +300,8 @@ async function loadPdf(arrayBuffer, fileName){
     const viewport = page.getViewport({ scale: 1 });
     const rvp = page.getViewport({ scale: 2 });
     const canvas = document.createElement('canvas');
-    canvas.width = rvp.width; canvas.height = rvp.height;
+    canvas.width = rvp.width;
+    canvas.height = rvp.height;
     canvas.style.width = viewport.width + 'px';
     canvas.style.height = viewport.height + 'px';
     await page.render({ canvasContext: canvas.getContext('2d'), viewport: rvp }).promise;
@@ -331,7 +421,7 @@ async function loadPdf(arrayBuffer, fileName){
 }
 
 /* ================================================================
-   ALIGNMENT TOOLBAR
+   6. ALIGNMENT TOOLBAR
    ================================================================ */
 function showAlignToolbar(lstate){
   state.focusedLine = lstate;
@@ -366,7 +456,6 @@ window.addEventListener('resize', repositionToolbar);
 function applyAlignment(lstate, align){
   lstate.alignment = align;
   lstate.el.style.textAlign = align;
-  // Reposition the box to match the new anchor
   const boxWidth = lstate.el.offsetWidth;
   let boxLeft;
   if(align === 'right')       boxLeft = lstate.originalRight - boxWidth;
@@ -416,7 +505,7 @@ document.addEventListener('keydown', e => {
 });
 
 /* ================================================================
-   STATS
+   7. STATS
    ================================================================ */
 function updateStats(){
   let words = 0, edited = 0, lines = 0;
@@ -435,7 +524,7 @@ function updateStats(){
 }
 
 /* ================================================================
-   FILE INPUT + DnD
+   8. FILE INPUT + DRAG & DROP
    ================================================================ */
 els.file.addEventListener('change', async e => {
   const f = e.target.files[0];
@@ -443,8 +532,10 @@ els.file.addEventListener('change', async e => {
   try{ await loadPdf(await f.arrayBuffer(), f.name); }
   catch(err){ console.error(err); toast('Could not read PDF: ' + err.message); }
 });
-['dragover','dragenter'].forEach(ev => els.drop.addEventListener(ev, e => { e.preventDefault(); els.drop.classList.add('over'); }));
-['dragleave','drop'].forEach(ev => els.drop.addEventListener(ev, e => { e.preventDefault(); els.drop.classList.remove('over'); }));
+['dragover','dragenter'].forEach(ev =>
+  els.drop.addEventListener(ev, e => { e.preventDefault(); els.drop.classList.add('over'); }));
+['dragleave','drop'].forEach(ev =>
+  els.drop.addEventListener(ev, e => { e.preventDefault(); els.drop.classList.remove('over'); }));
 els.drop.addEventListener('drop', async e => {
   const f = e.dataTransfer.files[0];
   if(f && f.type === 'application/pdf'){
@@ -454,7 +545,7 @@ els.drop.addEventListener('drop', async e => {
 });
 
 /* ================================================================
-   HELPERS
+   9. HELPERS
    ================================================================ */
 function measurePdf(font, text, size){
   try{ return font.widthOfTextAtSize(text, size); }
@@ -462,7 +553,7 @@ function measurePdf(font, text, size){
 }
 
 /* ================================================================
-   EXPORT PDF — replace edited lines only
+   10. EXPORT PDF — replace edited lines in place
    ================================================================ */
 async function buildPdfBytes(){
   const { PDFDocument, StandardFonts, rgb } = PDFLib;
@@ -470,12 +561,12 @@ async function buildPdfBytes(){
   outDoc.registerFontkit(window.fontkit);
 
   const fallback = {
-    'sans-regular': await outDoc.embedFont(StandardFonts.Helvetica),
-    'sans-bold': await outDoc.embedFont(StandardFonts.HelveticaBold),
+    'sans-regular':  await outDoc.embedFont(StandardFonts.Helvetica),
+    'sans-bold':     await outDoc.embedFont(StandardFonts.HelveticaBold),
     'serif-regular': await outDoc.embedFont(StandardFonts.TimesRoman),
-    'serif-bold': await outDoc.embedFont(StandardFonts.TimesRomanBold),
-    'mono-regular': await outDoc.embedFont(StandardFonts.Courier),
-    'mono-bold': await outDoc.embedFont(StandardFonts.CourierBold),
+    'serif-bold':    await outDoc.embedFont(StandardFonts.TimesRomanBold),
+    'mono-regular':  await outDoc.embedFont(StandardFonts.Courier),
+    'mono-bold':     await outDoc.embedFont(StandardFonts.CourierBold),
   };
   const embedded = {};
   for(const [k, bytes] of Object.entries(state.fonts)){
@@ -536,7 +627,7 @@ async function buildPdfBytes(){
 }
 
 /* ================================================================
-   PREVIEW + DOWNLOAD
+   11. PREVIEW MODAL
    ================================================================ */
 let currentPreviewBlob = null;
 function showPreview(blob){
@@ -579,7 +670,7 @@ els.exportPdf.addEventListener('click', async () => {
 });
 
 /* ================================================================
-   CONVERT TO DOCX
+   12. CONVERT TO DOCX
    ================================================================ */
 els.exportDocx.addEventListener('click', async () => {
   if(!state.pdfDoc) return;
@@ -598,7 +689,6 @@ els.exportDocx.addEventListener('click', async () => {
         spacing: { after: 200 },
       }));
 
-      // Group consecutive lines into paragraphs for DOCX (real Word paragraphs)
       const sorted = [...ps.lines].sort((a, b) => a.originalBaseline - b.originalBaseline);
       let cur = null;
       const paragraphs = [];
@@ -652,6 +742,6 @@ els.exportDocx.addEventListener('click', async () => {
 });
 
 /* ================================================================
-   BOOT
+   13. BOOT
    ================================================================ */
 (async () => { state.fonts = await loadMetricFonts(); })();
