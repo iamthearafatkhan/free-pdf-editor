@@ -3,32 +3,25 @@
 <head>
 <meta charset="UTF-8" />
 <meta name="viewport" content="width=device-width, initial-scale=1" />
-
-<title>Free PDF Editor — Edit Text in Any PDF Online (No Sign-Up, No Subscription)</title>
-<meta name="description" content="Free browser-based PDF editor. Upload any PDF, edit text like in Word. Change alignment, add text anywhere. Save as PDF or DOCX. No sign-up, no subscription, no uploads." />
-<meta name="keywords" content="free pdf editor, edit pdf online, pdf text editor, edit pdf without subscription, browser pdf editor, online pdf editor free, edit pdf like word, free pdf editor no sign up, pdf editor no watermark" />
+<title>Free PDF Editor — Edit Text in Any PDF Online (No Sign-Up)</title>
+<meta name="description" content="Free browser-based PDF editor. Click any line of text and edit it. Font, position, and alignment stay exactly as the PDF. Save as PDF or convert to DOCX. No sign-up, no subscription, no uploads." />
+<meta name="keywords" content="free pdf editor, edit pdf online, pdf text editor, edit pdf without subscription, browser pdf editor, edit pdf like word, free pdf editor no sign up" />
 <meta name="robots" content="index, follow, max-image-preview:large" />
 <meta name="author" content="Arafat Khan" />
 <meta name="theme-color" content="#3b5bdb" />
 <link rel="canonical" href="https://pdfeditnow.pages.dev/" />
-
 <meta property="og:type" content="website" />
-<meta property="og:title" content="Free PDF Editor — Edit Text in Any PDF Online" />
-<meta property="og:description" content="Upload any PDF and edit it like a Word document. Free, private, browser-based." />
+<meta property="og:title" content="Free PDF Editor — Edit Text in Any PDF" />
+<meta property="og:description" content="Click any line, edit it. Free, private, browser-based." />
 <meta property="og:url" content="https://pdfeditnow.pages.dev/" />
 <meta property="og:site_name" content="FreePDF Editor" />
 <meta property="og:image" content="https://pdfeditnow.pages.dev/preview.png" />
-<meta property="og:image:width" content="1200" />
-<meta property="og:image:height" content="630" />
 <meta property="og:locale" content="en_US" />
-
 <meta name="twitter:card" content="summary_large_image" />
 <meta name="twitter:title" content="Free PDF Editor — Edit Text in Any PDF" />
-<meta name="twitter:description" content="Free browser-based PDF editor. Edit any PDF like Word. No subscription." />
+<meta name="twitter:description" content="Free browser-based PDF editor. No subscription." />
 <meta name="twitter:image" content="https://pdfeditnow.pages.dev/preview.png" />
-
-<link rel="icon" href="data:image/svg+xml,<svg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 100 100'><rect width='100' height='100' rx='20' fill='%233b5bdb'/><text x='50' y='68' font-size='56' font-family='Arial,sans-serif' font-weight='bold' fill='white' text-anchor='middle'>P</text></svg>" />
-
+<link rel="icon" href="data:image/svg+xml,<svg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 100 100'><rect width='100' height='100' rx='20' fill='%233b5bdb'/><text x='50' y='68' font-size='56' font-family='Arial' font-weight='bold' fill='white' text-anchor='middle'>P</text></svg>" />
 <script type="application/ld+json">
 {
   "@context": "https://schema.org",
@@ -36,9 +29,8 @@
   "name": "FreePDF Editor",
   "applicationCategory": "UtilitiesApplication",
   "operatingSystem": "Web",
-  "description": "Free browser-based PDF editor. Edit any PDF like a Word document.",
+  "description": "Free browser-based PDF editor. Edit any PDF text line by line.",
   "url": "https://pdfeditnow.pages.dev/",
-  "browserRequirements": "Requires JavaScript",
   "author": {
     "@type": "Person",
     "name": "Arafat Khan",
@@ -50,57 +42,49 @@
   },
   "offers": { "@type": "Offer", "price": "0", "priceCurrency": "USD" },
   "featureList": [
-    "Upload any PDF and edit it like Word",
-    "Real paragraph reflow",
-    "Text stays invisible until you edit — canvas font preserved",
-    "Add text anywhere by double-clicking",
+    "Click any line of text and edit it in place",
+    "Font, position, and alignment preserved",
     "Left, center, right, and justified alignment",
+    "Save as PDF or convert to DOCX",
     "Day and night theme",
-    "Save as PDF or DOCX",
     "100% browser-based, no uploads"
-  ],
-  "aggregateRating": {
-    "@type": "AggregateRating", "ratingValue": "4.9", "ratingCount": "127"
-  }
+  ]
 }
 </script>
-
 <link rel="stylesheet" href="style.css" />
 </head>
 <body>
 
 <div class="sr-only">
   <h1>Free PDF Editor — Edit Text in Any PDF Online</h1>
-  <p>Upload any PDF and edit it like a Word document.</p>
+  <p>Click any line of text in your PDF and edit it. Fonts, positions, and alignment are preserved.</p>
 </div>
 
-<div class="align-toolbar" id="alignToolbar" role="toolbar" aria-label="Paragraph tools">
-  <button data-align="left" title="Left (Ctrl+Shift+L)" aria-label="Left align">
+<div class="align-toolbar" id="alignToolbar">
+  <button data-align="left" title="Left (Ctrl+Shift+L)">
     <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round"><line x1="3" y1="6" x2="21" y2="6"/><line x1="3" y1="12" x2="15" y2="12"/><line x1="3" y1="18" x2="19" y2="18"/></svg>
   </button>
-  <button data-align="center" title="Center (Ctrl+Shift+E)" aria-label="Center">
+  <button data-align="center" title="Center (Ctrl+Shift+E)">
     <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round"><line x1="3" y1="6" x2="21" y2="6"/><line x1="6" y1="12" x2="18" y2="12"/><line x1="4" y1="18" x2="20" y2="18"/></svg>
   </button>
-  <button data-align="right" title="Right (Ctrl+Shift+R)" aria-label="Right align">
+  <button data-align="right" title="Right (Ctrl+Shift+R)">
     <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round"><line x1="3" y1="6" x2="21" y2="6"/><line x1="9" y1="12" x2="21" y2="12"/><line x1="5" y1="18" x2="21" y2="18"/></svg>
   </button>
-  <button data-align="justify" title="Justify (Ctrl+Shift+J)" aria-label="Justify">
+  <button data-align="justify" title="Justify (Ctrl+Shift+J)">
     <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round"><line x1="3" y1="6" x2="21" y2="6"/><line x1="3" y1="12" x2="21" y2="12"/><line x1="3" y1="18" x2="21" y2="18"/></svg>
   </button>
   <div class="sep"></div>
-  <label class="font-picker" title="Font family">
-    <span class="font-label">Font</span>
+  <label class="font-picker">
+    <span>Font</span>
     <select id="fontSelect">
-      <option value="auto">Auto (best match)</option>
-      <option value="embedded">PDF's own font</option>
+      <option value="auto">Auto</option>
       <option value="sans">Sans-serif</option>
       <option value="serif">Serif</option>
       <option value="mono">Monospace</option>
-      <option value="georgia">Georgia</option>
-  </select>
+    </select>
   </label>
   <div class="sep"></div>
-  <button data-action="delete" title="Delete this paragraph" aria-label="Delete paragraph">
+  <button data-action="delete" title="Clear this line">
     <svg viewBox="0 0 24 24" fill="none" stroke="#dc2626" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M3 6h18"/><path d="M8 6V4a2 2 0 0 1 2-2h4a2 2 0 0 1 2 2v2"/><path d="M19 6l-1 14a2 2 0 0 1-2 2H8a2 2 0 0 1-2-2L5 6"/></svg>
   </button>
 </div>
@@ -110,26 +94,23 @@
 
   <div class="side-section">
     <h2>How to use</h2>
-    <div class="step"><div class="n">1</div><div class="t"><b>Open your PDF</b><small>Click "Open PDF" or drag a file. It becomes editable.</small></div></div>
-    <div class="step"><div class="n">2</div><div class="t"><b>Click any paragraph</b><small>A blue outline appears. The original text stays visible.</small></div></div>
-    <div class="step"><div class="n">3</div><div class="t"><b>Start typing</b><small>Text reflows like Word. Delete a word — the rest pulls up.</small></div></div>
-    <div class="step"><div class="n">4</div><div class="t"><b>Save</b><small>Save as PDF (preview first) or DOCX for full editing.</small></div></div>
+    <div class="step"><div class="n">1</div><div class="t"><b>Open your PDF</b><small>Click "Open PDF" or drag a file.</small></div></div>
+    <div class="step"><div class="n">2</div><div class="t"><b>Click a line of text</b><small>That one line becomes editable. Nothing else moves.</small></div></div>
+    <div class="step"><div class="n">3</div><div class="t"><b>Type your change</b><small>Font, size, and position stay the same as the PDF.</small></div></div>
+    <div class="step"><div class="n">4</div><div class="t"><b>Preview &amp; save</b><small>Download as PDF, or save as DOCX for further editing.</small></div></div>
   </div>
 
   <div class="side-section">
-    <h2>Tips</h2>
-    <p>· Text stays pixel-perfect until you edit it — you won't see any font swap on click.</p>
-    <p>· Once edited, use <b>Font</b> in the toolbar to match the PDF's font.</p>
-    <p>· <span class="kbd">Ctrl+Shift+L</span> <span class="kbd">E</span> <span class="kbd">R</span> <span class="kbd">J</span> for alignment.</p>
-    <label class="outline-toggle"><input type="checkbox" id="showOutlines" /><span>Show paragraph outlines</span></label>
+    <h2>Why lines, not paragraphs?</h2>
+    <p>PDFs store each line at a fixed position. Real editors like Smallpdf and Acrobat also edit line by line — that's how it stays exact.</p>
+    <p>For real paragraph reflow, click <b>Save as DOCX</b> and edit in Word.</p>
   </div>
 
   <div class="side-section">
     <h2>Document stats</h2>
     <div class="stat-row"><span class="k">Pages</span><span class="v" id="statPages">0</span></div>
-    <div class="stat-row"><span class="k">Paragraphs</span><span class="v" id="statParas">0</span></div>
+    <div class="stat-row"><span class="k">Editable lines</span><span class="v" id="statLines">0</span></div>
     <div class="stat-row"><span class="k">Words</span><span class="v" id="statWords">0</span></div>
-    <div class="stat-row"><span class="k">Characters</span><span class="v" id="statChars">0</span></div>
     <div class="stat-row"><span class="k">Edited</span><span class="v" id="statEdited">0</span></div>
     <div class="stat-row"><span class="k">Fonts loaded</span><span class="v" id="statFonts">—</span></div>
   </div>
@@ -137,13 +118,13 @@
   <div class="side-footer">
     <p class="built-by">Built by <b>Arafat Khan</b></p>
     <div class="socials">
-      <a href="https://github.com/iamthearafatkhan" target="_blank" rel="noopener noreferrer" title="GitHub" aria-label="GitHub">
+      <a href="https://github.com/iamthearafatkhan" target="_blank" rel="noopener noreferrer" title="GitHub">
         <svg viewBox="0 0 24 24" fill="currentColor"><path d="M12 .5C5.7.5.5 5.7.5 12c0 5.1 3.3 9.4 7.9 10.9.6.1.8-.3.8-.6v-2c-3.2.7-3.9-1.5-3.9-1.5-.5-1.3-1.3-1.7-1.3-1.7-1.1-.7.1-.7.1-.7 1.2.1 1.8 1.2 1.8 1.2 1 1.8 2.8 1.3 3.5 1 .1-.8.4-1.3.8-1.6-2.6-.3-5.3-1.3-5.3-5.8 0-1.3.5-2.3 1.2-3.2-.1-.3-.5-1.5.1-3.1 0 0 1-.3 3.3 1.2.9-.3 1.9-.4 2.9-.4 1 0 2 .1 2.9.4 2.3-1.5 3.3-1.2 3.3-1.2.6 1.6.2 2.8.1 3.1.8.9 1.2 1.9 1.2 3.2 0 4.5-2.7 5.5-5.3 5.8.4.4.8 1.1.8 2.2v3.3c0 .3.2.7.8.6 4.7-1.6 7.9-5.8 7.9-10.9C23.5 5.7 18.3.5 12 .5z"/></svg>
       </a>
-      <a href="https://www.linkedin.com/in/iamthearafatkhan/" target="_blank" rel="noopener noreferrer" title="LinkedIn" aria-label="LinkedIn">
+      <a href="https://www.linkedin.com/in/iamthearafatkhan/" target="_blank" rel="noopener noreferrer" title="LinkedIn">
         <svg viewBox="0 0 24 24" fill="currentColor"><path d="M20.5 2h-17C2.7 2 2 2.7 2 3.5v17C2 21.3 2.7 22 3.5 22h17c.8 0 1.5-.7 1.5-1.5v-17C22 2.7 21.3 2 20.5 2zM8 19H5V9h3v10zM6.5 7.7c-.9 0-1.7-.7-1.7-1.7s.7-1.7 1.7-1.7 1.7.7 1.7 1.7-.8 1.7-1.7 1.7zM19 19h-3v-5.3c0-1.3-.5-2.1-1.6-2.1-.9 0-1.4.6-1.6 1.2-.1.2-.1.5-.1.8V19h-3V9h3v1.3c.4-.6 1.1-1.5 2.7-1.5 2 0 3.6 1.3 3.6 4V19z"/></svg>
       </a>
-      <a href="https://arafatkhan.vercel.app" target="_blank" rel="noopener noreferrer" title="Portfolio" aria-label="Portfolio">
+      <a href="https://arafatkhan.vercel.app" target="_blank" rel="noopener noreferrer" title="Portfolio">
         <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><circle cx="12" cy="12" r="10"/><line x1="2" y1="12" x2="22" y2="12"/><path d="M12 2a15 15 0 0 1 4 10 15 15 0 0 1-4 10 15 15 0 0 1-4-10 15 15 0 0 1 4-10z"/></svg>
       </a>
     </div>
@@ -160,10 +141,10 @@
     </div>
     <div class="center-actions">
       <button id="exportPdf" class="primary" disabled>💾 Save as PDF</button>
-      <button id="exportDocx" disabled>📝 Save as DOCX</button>
+      <button id="exportDocx" disabled>📝 Convert to DOCX</button>
     </div>
     <div class="right-side">
-      <button id="themeToggle" class="theme-toggle" title="Toggle day / night theme" aria-label="Toggle theme">
+      <button id="themeToggle" class="theme-toggle" title="Toggle theme">
         <svg class="icon-moon" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M21 12.79A9 9 0 1 1 11.21 3 7 7 0 0 0 21 12.79z"/></svg>
         <svg class="icon-sun" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><circle cx="12" cy="12" r="4"/><line x1="12" y1="2" x2="12" y2="4"/><line x1="12" y1="20" x2="12" y2="22"/><line x1="4.93" y1="4.93" x2="6.34" y2="6.34"/><line x1="17.66" y1="17.66" x2="19.07" y2="19.07"/><line x1="2" y1="12" x2="4" y2="12"/><line x1="20" y1="12" x2="22" y2="12"/><line x1="4.93" y1="19.07" x2="6.34" y2="17.66"/><line x1="17.66" y1="6.34" x2="19.07" y2="4.93"/></svg>
       </button>
@@ -174,8 +155,8 @@
   <div class="viewport" id="viewport">
     <div id="drop" class="drop">
       <h2>Drop a PDF here, or click "Open PDF"</h2>
-      <p>Your PDF becomes an editable document. Text stays pixel-perfect until you edit it.</p>
-      <p class="seo-hint">Free online PDF editor — no sign-up, no subscription, no watermark.<br>Real paragraph reflow. Alignment preserved. Save as PDF or DOCX.</p>
+      <p>Your PDF text becomes editable. Click any line to change it.</p>
+      <p class="seo-hint">Free online PDF editor — no sign-up, no subscription, no watermark.<br>Click any line of text and edit it in place.</p>
     </div>
     <div id="pages"></div>
   </div>
