@@ -1,5 +1,5 @@
 /* ================================================================
-   FreePDF Editor — line-based PDF editing
+   FreePDF Editor — Word-like paragraph reflow
    ================================================================ */
 pdfjsLib.GlobalWorkerOptions.workerSrc =
   "https://cdnjs.cloudflare.com/ajax/libs/pdf.js/3.11.174/pdf.worker.min.js";
@@ -16,7 +16,7 @@ const els = {
   fileName:  document.getElementById('fileName'),
   docInfo:   document.getElementById('docInfo'),
   statPages: document.getElementById('statPages'),
-  statLines: document.getElementById('statLines'),
+  statParas: document.getElementById('statParas'),
   statWords: document.getElementById('statWords'),
   statChars: document.getElementById('statChars'),
   statEdited:document.getElementById('statEdited'),
@@ -31,9 +31,8 @@ const els = {
   themeToggle:  document.getElementById('themeToggle'),
 };
 
-const state = { pdfBytes:null, pdfDoc:null, pages:[], fonts:{}, focusedLine:null };
+const state = { pdfBytes:null, pdfDoc:null, pages:[], fonts:{}, focusedPara:null };
 
-/* ---------- Utilities ---------- */
 function toast(msg, ms = 2500){
   els.status.textContent = msg;
   els.status.classList.add('show');
@@ -49,7 +48,6 @@ function downloadBlob(blob, filename){
   setTimeout(() => { document.body.removeChild(a); URL.revokeObjectURL(url); }, 500);
 }
 
-/* ---------- Theme ---------- */
 document.getElementById('year').textContent = new Date().getFullYear();
 function applyTheme(t){
   document.documentElement.setAttribute('data-theme', t);
@@ -69,7 +67,7 @@ document.getElementById('showOutlines').addEventListener('change', e => {
   document.body.classList.toggle('show-outlines', e.target.checked);
 });
 
-/* ---------- Load metric fonts ---------- */
+/* -------- Metric fonts -------- */
 async function tryFetchFont(url){
   try{ const r = await fetch(url, { mode:'cors' }); if(!r.ok) return null;
        return await r.arrayBuffer(); }catch(_){ return null; }
@@ -93,7 +91,7 @@ async function loadMetricFonts(){
   return out;
 }
 
-/* ---------- Font cleanup ---------- */
+/* -------- Fonts -------- */
 function cleanFontName(raw){
   if(!raw) return { name:'Arial', family:'sans', bold:false, italic:false };
   let n = String(raw).replace(/^[A-Z]{6}\+/, '');
@@ -130,7 +128,7 @@ function cssFamilyFor(f){
   return 'Arial, Helvetica, sans-serif';
 }
 
-/* ---------- Group PDF text items into lines ---------- */
+/* -------- Group text items into lines -------- */
 function groupItemsIntoLines(items){
   const lines = [];
   const sorted = [...items].sort((a,b) => a.top - b.top);
@@ -177,29 +175,7 @@ function joinItemsText(items){
   return s;
 }
 
-/* ---------- Alignment detection (line-cluster based) ---------- */
-function detectAlignment(lines, fontSize){
-  if(lines.length <= 1) return 'left';
-  const tol = Math.max(fontSize * 0.6, 3);
-  const lefts  = lines.map(l => l.left);
-  const rights = lines.map(l => l.right);
-  const centers = lines.map(l => (l.left + l.right) / 2);
-  const leftsMatch   = lefts.every(l  => Math.abs(l - lefts[0])   < tol);
-  const rightsMatch  = rights.every(r => Math.abs(r - rights[0])  < tol);
-  const centersMatch = centers.every(c => Math.abs(c - centers[0]) < tol);
-  if(leftsMatch && centersMatch) return 'left';
-  if(centersMatch && !leftsMatch && !rightsMatch) return 'center';
-  if(rightsMatch && !leftsMatch) return 'right';
-  if(lines.length > 2){
-    const body = lines.slice(0, -1);
-    const bl = body.every(l => Math.abs(l.left  - body[0].left)  < tol);
-    const br = body.every(l => Math.abs(l.right - body[0].right) < tol);
-    if(bl && br) return 'justify';
-  }
-  return 'left';
-}
-
-/* Cluster lines into paragraph groups (for alignment detection only) */
+/* -------- Cluster lines into paragraphs -------- */
 function clusterLines(lines){
   if(!lines.length) return [];
   const gaps = [];
@@ -231,15 +207,42 @@ function clusterLines(lines){
   }
   if(cur.length) clusters.push(cur);
 
-  return clusters.map(c => ({
-    lines: c,
-    fontSize: c.reduce((s,l) => s + l.fontSize, 0) / c.length,
-    alignment: detectAlignment(c, c.reduce((s,l) => s + l.fontSize, 0) / c.length),
-  }));
+  return clusters.map(c => {
+    const fontSize = c.reduce((s,l) => s + l.fontSize, 0) / c.length;
+    return {
+      lines: c,
+      fontSize,
+      lineHeight: c.length > 1
+        ? (c[c.length-1].baseline - c[0].baseline) / (c.length - 1)
+        : fontSize * 1.25,
+      alignment: detectAlignment(c, fontSize),
+    };
+  });
+}
+
+function detectAlignment(lines, fontSize){
+  if(lines.length <= 1) return 'left';
+  const tol = Math.max(fontSize * 0.6, 3);
+  const lefts  = lines.map(l => l.left);
+  const rights = lines.map(l => l.right);
+  const centers = lines.map(l => (l.left + l.right) / 2);
+  const leftsMatch   = lefts.every(l  => Math.abs(l - lefts[0])   < tol);
+  const rightsMatch  = rights.every(r => Math.abs(r - rights[0])  < tol);
+  const centersMatch = centers.every(c => Math.abs(c - centers[0]) < tol);
+  if(leftsMatch && centersMatch) return 'left';
+  if(centersMatch && !leftsMatch && !rightsMatch) return 'center';
+  if(rightsMatch && !leftsMatch) return 'right';
+  if(lines.length > 2){
+    const body = lines.slice(0, -1);
+    const bl = body.every(l => Math.abs(l.left  - body[0].left)  < tol);
+    const br = body.every(l => Math.abs(l.right - body[0].right) < tol);
+    if(bl && br) return 'justify';
+  }
+  return 'left';
 }
 
 /* ================================================================
-   LOAD PDF — one editable box per line
+   LOAD PDF — build ONE editable box per paragraph
    ================================================================ */
 async function loadPdf(arrayBuffer, fileName){
   state.pdfBytes = new Uint8Array(arrayBuffer);
@@ -267,7 +270,7 @@ async function loadPdf(arrayBuffer, fileName){
     wrap.appendChild(canvas);
     els.pages.appendChild(wrap);
 
-    const pageState = { pdfWidth: viewport.width, pdfHeight: viewport.height, wrap, lines: [] };
+    const pageState = { pdfWidth: viewport.width, pdfHeight: viewport.height, wrap, paras: [] };
     wrap._pageState = pageState;
 
     const tc = await page.getTextContent();
@@ -298,58 +301,74 @@ async function loadPdf(arrayBuffer, fileName){
     const lines = groupItemsIntoLines(rawItems);
     const clusters = clusterLines(lines);
 
-    /* Attach alignment from cluster to each line */
-    for(const c of clusters){
-      for(const line of c.lines){ line.alignment = c.alignment; }
-    }
+    for(const cluster of clusters){
+      const cLines = cluster.lines;
+      const left = Math.min(...cLines.map(l => l.left));
+      const right = Math.max(...cLines.map(l => l.right));
+      const top = Math.min(...cLines.map(l => l.top));
+      const baseline1 = cLines[0].baseline;
+      const fontSize = cluster.fontSize;
+      const lineHeight = cluster.lineHeight;
+      const alignment = cluster.alignment;
+      const font = cLines[0].font;
+      const width = right - left;
 
-    /* Create editable box per line */
-    for(const line of lines){
+      // Full paragraph text (join lines with a space)
+      let text = '';
+      for(let i = 0; i < cLines.length; i++){
+        const t = cLines[i].text;
+        if(!text){ text = t; continue; }
+        if(text.endsWith('-')) text = text.slice(0, -1) + t.replace(/^\s+/, '');
+        else text += ' ' + t.replace(/^\s+/, '');
+      }
+
       const el = document.createElement('div');
-      el.className = 'txt';
+      el.className = 'para';
       el.contentEditable = 'true';
       el.spellcheck = false;
-      el.textContent = line.text;
+      el.textContent = text;
 
-      const lineWidth = line.right - line.left;
-      const buffer = Math.max(line.fontSize * 3, 40);
-      const boxWidth = lineWidth + buffer;
-
-      const align = line.alignment || 'left';
-      let boxLeft;
-      if(align === 'right') boxLeft = line.right - boxWidth;
-      else if(align === 'center') boxLeft = ((line.left + line.right) / 2) - boxWidth / 2;
-      else boxLeft = line.left;
+      // For alignment, the box must extend to the full paragraph width
+      const boxWidth = width + fontSize * 0.5;
+      let boxLeft = left;
+      if(alignment === 'right')       boxLeft = right - boxWidth;
+      else if(alignment === 'center') boxLeft = ((left + right) / 2) - boxWidth / 2;
 
       el.style.left = boxLeft + 'px';
-      el.style.top = (line.baseline - line.fontSize * 1.15) + 'px';
+      el.style.top = (baseline1 - fontSize * 1.15) + 'px';
       el.style.width = boxWidth + 'px';
-      el.style.minHeight = (line.fontSize * 1.35) + 'px';
-      el.style.fontSize = line.fontSize + 'px';
-      el.style.lineHeight = 1;
-      el.style.fontFamily = cssFamilyFor(line.font);
-      el.style.fontWeight = line.font.bold ? '700' : '400';
-      el.style.fontStyle = line.font.italic ? 'italic' : 'normal';
-      el.style.textAlign = align;
+      el.style.fontSize = fontSize + 'px';
+      el.style.lineHeight = lineHeight + 'px';
+      el.style.fontFamily = cssFamilyFor(font);
+      el.style.fontWeight = font.bold ? '700' : '400';
+      el.style.fontStyle = font.italic ? 'italic' : 'normal';
+      el.style.textAlign = alignment;
 
-      const lstate = {
+      const pstate = {
         el,
-        originalText: line.text,
-        originalLeft: line.left,
-        originalRight: line.right,
-        originalBaseline: line.baseline,
-        originalWidth: lineWidth,
-        fontSize: line.fontSize,
-        font: line.font,
-        alignment: align,
+        originalText: text,
+        originalTop: baseline1 - fontSize * 1.15,
+        originalHeight: 0,   // measured after appending
+        currentHeight: 0,
+        left: boxLeft,
+        width: boxWidth,
+        baseline1,
+        fontSize,
+        lineHeight,
+        font,
+        alignment,
+        originalLines: cLines.map(l => ({
+          x: l.left, baseline: l.baseline,
+          width: l.right - l.left, fontSize: l.fontSize,
+        })),
         changed: false,
         isNew: false,
       };
-      pageState.lines.push(lstate);
+      pageState.paras.push(pstate);
 
-      const onInput = () => handleLineInput(lstate);
+      const onInput = () => handleParaInput(pageState, pstate);
       el.addEventListener('input', onInput);
-      el.addEventListener('focus', () => showAlignToolbar(lstate));
+      el.addEventListener('focus', () => showAlignToolbar(pstate));
       el.addEventListener('blur', () => {
         onInput();
         setTimeout(() => {
@@ -358,23 +377,27 @@ async function loadPdf(arrayBuffer, fileName){
           hideAlignToolbar();
         }, 180);
       });
-      el.addEventListener('keydown', e => {
-        if(e.key === 'Escape') el.blur();
-        if(e.key === 'Enter'){ e.preventDefault(); el.blur(); }
-      });
+      el.addEventListener('keydown', e => { if(e.key === 'Escape') el.blur(); });
 
       wrap.appendChild(el);
     }
 
+    // Measure natural heights AFTER all paragraphs exist
+    for(const pstate of pageState.paras){
+      pstate.originalHeight = pstate.el.offsetHeight;
+      pstate.currentHeight = pstate.el.offsetHeight;
+    }
+
+    // Double-click empty space → new paragraph
     wrap.addEventListener('dblclick', e => {
-      if(e.target.classList && e.target.classList.contains('txt')) return;
+      if(e.target.classList && e.target.classList.contains('para')) return;
       e.preventDefault();
       const rect = wrap.getBoundingClientRect();
-      createNewLine(pageState, e.clientX - rect.left, e.clientY - rect.top);
+      createNewParagraph(pageState, e.clientX - rect.left, e.clientY - rect.top);
     });
 
     state.pages.push(pageState);
-    console.log(`[page ${p}] ${rawItems.length} items → ${lines.length} lines → ${clusters.length} paragraph clusters`);
+    console.log(`[page ${p}] ${rawItems.length} items → ${lines.length} lines → ${clusters.length} paragraphs`);
   }
 
   els.exportPdf.disabled = false;
@@ -383,54 +406,86 @@ async function loadPdf(arrayBuffer, fileName){
   els.fileChip.classList.remove('hidden');
   els.fileName.textContent = fileName || 'document.pdf';
   els.docInfo.textContent = `${state.pages.length} page${state.pages.length !== 1 ? 's' : ''} loaded`;
-  toast('PDF loaded — click any line to edit');
+  toast('PDF loaded — click any paragraph to edit');
   updateStats();
 }
 
-/* ---------- Editing ---------- */
-function handleLineInput(lstate){
-  const text = lstate.el.textContent;
-  lstate.changed = (text !== lstate.originalText);
-  lstate.el.classList.toggle('changed', lstate.changed);
+/* ================================================================
+   EDITING + REFLOW
+   ================================================================ */
+function handleParaInput(pageState, pstate){
+  const text = pstate.el.textContent;
+  const changed = (text !== pstate.originalText);
+  pstate.changed = changed;
+  pstate.el.classList.toggle('changed', changed);
+
+  const newH = pstate.el.offsetHeight;
+  if(Math.abs(newH - pstate.currentHeight) > 0.5){
+    pstate.currentHeight = newH;
+    relayoutPage(pageState);
+  }
   updateStats();
 }
 
-function createNewLine(pageState, x, y){
+/* The magic: shift all following paragraphs up/down based on height deltas */
+function relayoutPage(pageState){
+  const sorted = [...pageState.paras].sort((a,b) => a.originalTop - b.originalTop);
+  let shift = 0;
+  for(const para of sorted){
+    para.el.style.top = (para.originalTop + shift) + 'px';
+    const currentH = Math.max(para.el.offsetHeight, para.lineHeight);
+    para.currentHeight = currentH;
+    shift += currentH - para.originalHeight;
+  }
+}
+
+function createNewParagraph(pageState, x, y){
   const defaultFont = { name:'Arial', family:'sans', bold:false, italic:false };
-  const fontSize = 12;
+  const fontSize = 12, lineHeight = fontSize * 1.3;
+
   let snapX = x;
-  const lefts = pageState.lines.map(l => l.originalLeft);
+  const lefts = pageState.paras.map(p => p.left);
   if(lefts.length){
     const nearest = lefts.reduce((a,b) => Math.abs(b-x) < Math.abs(a-x) ? b : a, lefts[0]);
     if(Math.abs(nearest - x) < 30) snapX = nearest;
   }
+
   const el = document.createElement('div');
-  el.className = 'txt changed';
+  el.className = 'para changed';
   el.contentEditable = 'true';
   el.spellcheck = false;
   el.textContent = '';
   el.style.left = snapX + 'px';
   el.style.top = y + 'px';
-  el.style.width = '400px';
-  el.style.minHeight = (fontSize * 1.4) + 'px';
+  el.style.width = '60%';
+  el.style.minHeight = lineHeight + 'px';
   el.style.fontSize = fontSize + 'px';
-  el.style.lineHeight = 1;
+  el.style.lineHeight = lineHeight + 'px';
   el.style.fontFamily = cssFamilyFor(defaultFont);
   el.style.textAlign = 'left';
 
-  const lstate = {
-    el, originalText:'',
-    originalLeft:snapX, originalRight:snapX + 200,
-    originalBaseline: y + fontSize * 0.82,
-    originalWidth: 200,
-    fontSize, font: defaultFont, alignment: 'left',
-    changed: true, isNew: true,
+  const pstate = {
+    el,
+    originalText: '',
+    originalTop: y,
+    originalHeight: lineHeight,
+    currentHeight: lineHeight,
+    left: snapX,
+    width: 0,
+    baseline1: y + fontSize * 0.82,
+    fontSize,
+    lineHeight,
+    font: defaultFont,
+    alignment: 'left',
+    originalLines: [],
+    changed: true,
+    isNew: true,
   };
-  pageState.lines.push(lstate);
+  pageState.paras.push(pstate);
 
-  const onInput = () => handleLineInput(lstate);
+  const onInput = () => handleParaInput(pageState, pstate);
   el.addEventListener('input', onInput);
-  el.addEventListener('focus', () => showAlignToolbar(lstate));
+  el.addEventListener('focus', () => showAlignToolbar(pstate));
   el.addEventListener('blur', () => {
     onInput();
     setTimeout(() => {
@@ -443,16 +498,19 @@ function createNewLine(pageState, x, y){
 
   pageState.wrap.appendChild(el);
   el.focus();
+  relayoutPage(pageState);
   updateStats();
 }
 
-/* ---------- Alignment toolbar ---------- */
-function showAlignToolbar(lstate){
-  state.focusedLine = lstate;
+/* ================================================================
+   ALIGNMENT TOOLBAR
+   ================================================================ */
+function showAlignToolbar(pstate){
+  state.focusedPara = pstate;
   const tb = els.alignToolbar;
   tb.style.visibility = 'hidden';
   tb.classList.add('show');
-  const rect = lstate.el.getBoundingClientRect();
+  const rect = pstate.el.getBoundingClientRect();
   const tbRect = tb.getBoundingClientRect();
   const sx = window.scrollX || window.pageXOffset;
   const sy = window.scrollY || window.pageYOffset;
@@ -464,89 +522,95 @@ function showAlignToolbar(lstate){
   tb.style.top = top + 'px';
   tb.style.visibility = '';
   tb.querySelectorAll('button').forEach(b => {
-    if(b.dataset.align) b.classList.toggle('active', b.dataset.align === lstate.alignment);
+    if(b.dataset.align) b.classList.toggle('active', b.dataset.align === pstate.alignment);
   });
 }
 function hideAlignToolbar(){
-  state.focusedLine = null;
+  state.focusedPara = null;
   els.alignToolbar.classList.remove('show');
 }
 function repositionToolbar(){
-  if(state.focusedLine && els.alignToolbar.classList.contains('show')) showAlignToolbar(state.focusedLine);
+  if(state.focusedPara && els.alignToolbar.classList.contains('show')) showAlignToolbar(state.focusedPara);
 }
 els.viewport.addEventListener('scroll', repositionToolbar, { passive:true });
 window.addEventListener('resize', repositionToolbar);
 window.addEventListener('scroll', repositionToolbar, { passive:true });
 
-function applyAlignment(lstate, align){
-  lstate.alignment = align;
-  lstate.el.style.textAlign = align;
-  lstate.changed = true;
-  lstate.el.classList.add('changed');
+function applyAlignment(pstate, align){
+  pstate.alignment = align;
+  pstate.el.style.textAlign = align;
+  pstate.changed = true;
+  pstate.el.classList.add('changed');
 
-  // Reposition the box so the text sits at the correct anchor
-  const lineWidth = lstate.originalWidth;
-  const buffer = Math.max(lstate.fontSize * 3, 40);
-  const boxWidth = lineWidth + buffer;
-  let boxLeft;
-  if(align === 'right') boxLeft = lstate.originalRight - boxWidth;
-  else if(align === 'center') boxLeft = ((lstate.originalLeft + lstate.originalRight) / 2) - boxWidth / 2;
-  else boxLeft = lstate.originalLeft;
-
-  lstate.el.style.left = boxLeft + 'px';
-  lstate.el.style.width = boxWidth + 'px';
+  // Reposition box so anchor matches the alignment
+  const px = pstate.el.getBoundingClientRect();
+  const width = pstate.el.offsetWidth;
+  const pageWrap = pstate.el.parentElement;
+  const pageRect = pageWrap.getBoundingClientRect();
+  const currentLeft = parseFloat(pstate.el.style.left);
+  const currentRight = currentLeft + width;
+  let boxLeft = currentLeft;
+  if(align === 'right')       boxLeft = currentRight - width;   // unchanged (box ends at same right)
+  else if(align === 'center') boxLeft = ((currentLeft + currentRight) / 2) - width / 2;
+  else                         boxLeft = currentLeft;            // for left, keep as-is
+  pstate.el.style.left = boxLeft + 'px';
 
   els.alignToolbar.querySelectorAll('button').forEach(b =>
     b.classList.toggle('active', b.dataset.align === align));
-  if(document.activeElement !== lstate.el) lstate.el.focus();
+  if(document.activeElement !== pstate.el) pstate.el.focus();
   updateStats();
 }
 
 els.alignToolbar.addEventListener('mousedown', e => e.preventDefault());
 els.alignToolbar.addEventListener('click', e => {
   const btn = e.target.closest('button');
-  if(!btn || !state.focusedLine) return;
-  if(btn.dataset.align){ applyAlignment(state.focusedLine, btn.dataset.align); return; }
+  if(!btn || !state.focusedPara) return;
+  if(btn.dataset.align){ applyAlignment(state.focusedPara, btn.dataset.align); return; }
   if(btn.dataset.action === 'delete'){
-    if(!confirm('Delete this line?')) return;
-    const ls = state.focusedLine;
-    const pageState = state.pages.find(ps => ps.lines.includes(ls));
+    if(!confirm('Delete this paragraph?')) return;
+    const ps = state.focusedPara;
+    const pageState = state.pages.find(p => p.paras.includes(ps));
     if(!pageState) return;
-    ls.el.remove();
-    pageState.lines = pageState.lines.filter(l => l !== ls);
+    ps.el.remove();
+    pageState.paras = pageState.paras.filter(p => p !== ps);
+    relayoutPage(pageState);
     hideAlignToolbar();
     updateStats();
-    toast('Line deleted');
+    toast('Paragraph deleted');
   }
 });
 
 document.addEventListener('keydown', e => {
-  if(!state.focusedLine) return;
+  if(!state.focusedPara) return;
   if(!(e.ctrlKey || e.metaKey) || !e.shiftKey) return;
   const map = { l:'left', e:'center', r:'right', j:'justify' };
   const k = e.key.toLowerCase();
-  if(map[k]){ e.preventDefault(); applyAlignment(state.focusedLine, map[k]); }
+  if(map[k]){ e.preventDefault(); applyAlignment(state.focusedPara, map[k]); }
 });
 
-/* ---------- Stats ---------- */
+/* ================================================================
+   STATS
+   ================================================================ */
 function updateStats(){
-  let words = 0, chars = 0, edited = 0, lines = 0;
+  let words = 0, chars = 0, edited = 0, paras = 0;
   for(const ps of state.pages){
-    lines += ps.lines.length;
-    for(const l of ps.lines){
-      const t = (l.el.textContent || '').trim();
+    paras += ps.paras.length;
+    for(const p of ps.paras){
+      const t = (p.el.textContent || '').trim();
       if(t){ words += t.split(/\s+/).length; chars += t.length; }
-      if(l.changed) edited++;
+      if(p.changed) edited++;
     }
   }
   els.statPages.textContent = state.pages.length;
-  els.statLines.textContent = lines;
+  els.statParas.textContent = paras;
   els.statWords.textContent = words;
   els.statChars.textContent = chars;
   els.statEdited.textContent = edited;
 }
 
-/* ---------- File input + DnD ---------- */
+/* ================================================================
+   FILE INPUT + DnD
+   ================================================================ */
 els.file.addEventListener('change', async e => {
   const f = e.target.files[0];
   if(!f) return;
@@ -563,14 +627,47 @@ els.drop.addEventListener('drop', async e => {
   } else toast('Please drop a PDF file');
 });
 
-/* ---------- PDF text helpers ---------- */
+/* ================================================================
+   PDF TEXT HELPERS
+   ================================================================ */
+function wrapTextForPdf(text, font, fontSize, maxWidth){
+  const words = text.split(/\s+/).filter(Boolean);
+  const lines = [];
+  let cur = '';
+  for(const w of words){
+    const test = cur ? cur + ' ' + w : w;
+    let width;
+    try{ width = font.widthOfTextAtSize(test, fontSize); }
+    catch(_){ width = test.length * fontSize * 0.55; }
+    if(width > maxWidth && cur){ lines.push(cur); cur = w; }
+    else cur = test;
+  }
+  if(cur) lines.push(cur);
+  return lines;
+}
 function measurePdf(font, text, size){
   try{ return font.widthOfTextAtSize(text, size); }
   catch(_){ return text.length * size * 0.55; }
 }
+function drawJustifiedLine(op, font, text, size, xStart, targetWidth, y, rgb){
+  const words = text.split(/\s+/).filter(Boolean);
+  if(words.length < 2){
+    op.drawText(text, { x:xStart, y, size, font, color: rgb(0,0,0) });
+    return;
+  }
+  let wWidth = 0;
+  for(const w of words) wWidth += measurePdf(font, w, size);
+  const gapPer = (targetWidth - wWidth) / (words.length - 1);
+  let x = xStart;
+  for(let i = 0; i < words.length; i++){
+    op.drawText(words[i], { x, y, size, font, color: rgb(0,0,0) });
+    x += measurePdf(font, words[i], size);
+    if(i < words.length - 1) x += gapPer;
+  }
+}
 
 /* ================================================================
-   EXPORT PDF — line-by-line, alignment-preserved
+   BUILD PDF — reflow-aware, alignment-preserved
    ================================================================ */
 async function buildPdfBytes(){
   const { PDFDocument, StandardFonts, rgb } = PDFLib;
@@ -601,57 +698,93 @@ async function buildPdfBytes(){
     const sx = pw / ps.pdfWidth;
     const sy = ph / ps.pdfHeight;
 
-    for(const l of ps.lines){
-      if(!l.changed && !l.isNew) continue;
+    for(const para of ps.paras){
+      if(!para.changed && !para.isNew) continue;
 
-      /* White-out original line only */
-      if(!l.isNew){
-        const vpTop    = l.originalBaseline - l.fontSize * 1.10;
-        const vpBottom = l.originalBaseline + l.fontSize * 0.35;
-        const pdfY     = ph - vpBottom * sy;
-        const rectH    = (vpBottom - vpTop) * sy;
-        if(rectH > 0){
+      /* White-out original lines */
+      if(!para.isNew){
+        for(const ln of para.originalLines){
+          const vpTop    = ln.baseline - ln.fontSize * 1.10;
+          const vpBottom = ln.baseline + ln.fontSize * 0.35;
+          const pdfY     = ph - vpBottom * sy;
+          const rectH    = (vpBottom - vpTop) * sy;
+          if(rectH <= 0) continue;
           op.drawRectangle({
-            x: l.originalLeft * sx - 2,
-            y: pdfY,
-            width: l.originalWidth * sx + 4,
-            height: rectH,
+            x: ln.x * sx - 2, y: pdfY,
+            width: ln.width * sx + 4, height: rectH,
             color: rgb(1,1,1),
           });
         }
       }
 
-      const text = (l.el.textContent || '').replace(/\s+/g, ' ').trim();
+      const text = (para.el.textContent || '').replace(/\s+/g, ' ').trim();
       if(!text) continue;
 
-      const font = pickFont(l.font);
-      const fontPt = l.fontSize * sy;
-      const baselinePdfY = ph - l.originalBaseline * sy;
-      const textWidth = measurePdf(font, text, fontPt);
-      const align = l.alignment || 'left';
+      /* Compute current top position (post-reflow) */
+      const elTopVp = parseFloat(para.el.style.top);
+      const shiftY = elTopVp - para.originalTop;
 
-      let x;
-      if(align === 'right'){
-        x = (l.originalRight * sx) - textWidth;
-      } else if(align === 'center'){
-        const centerPdf = ((l.originalLeft + l.originalRight) / 2) * sx;
-        x = centerPdf - textWidth / 2;
+      /* First baseline: use original first line's baseline + reflow shift */
+      let firstBaselineVp;
+      if(para.originalLines && para.originalLines.length > 0){
+        firstBaselineVp = para.originalLines[0].baseline + shiftY;
       } else {
-        x = l.originalLeft * sx;
+        const halfLead = (para.lineHeight - para.fontSize) / 2;
+        firstBaselineVp = elTopVp + halfLead + para.fontSize * 0.82;
+      }
+      const firstBaselinePdf = ph - firstBaselineVp * sy;
+
+      /* Line spacing: from original, or from CSS line-height */
+      let lineHeightPt;
+      if(para.originalLines && para.originalLines.length > 1){
+        let total = 0;
+        for(let k = 1; k < para.originalLines.length; k++){
+          total += para.originalLines[k].baseline - para.originalLines[k-1].baseline;
+        }
+        lineHeightPt = (total / (para.originalLines.length - 1)) * sy;
+      } else {
+        lineHeightPt = para.lineHeight * sy;
       }
 
-      try{
-        op.drawText(text, { x, y: baselinePdfX_y(baselinePdfY), size: fontPt, font, color: rgb(0,0,0) });
-      }catch(e){
-        console.warn('drawText failed:', text, e);
+      const font = pickFont(para.font);
+      const fontPt = para.fontSize * sy;
+      const align = para.alignment || 'left';
+
+      /* Box left + width in PDF points */
+      const boxLeftPt = parseFloat(para.el.style.left) * sx;
+      const boxWidthPt = para.el.offsetWidth * sx;
+
+      const wrapped = wrapTextForPdf(text, font, fontPt, boxWidthPt);
+
+      for(let j = 0; j < wrapped.length; j++){
+        const lineText = wrapped[j];
+        const lineWidth = measurePdf(font, lineText, fontPt);
+        const isLast = (j === wrapped.length - 1);
+
+        let x = boxLeftPt;
+        if(align === 'right')       x = boxLeftPt + boxWidthPt - lineWidth;
+        else if(align === 'center') x = boxLeftPt + (boxWidthPt - lineWidth) / 2;
+
+        const y = firstBaselinePdf - j * lineHeightPt;
+
+        try{
+          if(align === 'justify' && !isLast && wrapped.length > 1){
+            drawJustifiedLine(op, font, lineText, fontPt, boxLeftPt, boxWidthPt, y, rgb);
+          } else {
+            op.drawText(lineText, { x, y, size: fontPt, font, color: rgb(0,0,0) });
+          }
+        }catch(e){
+          console.warn('drawText failed:', lineText, e);
+        }
       }
     }
   }
   return await outDoc.save();
 }
-function baselinePdfX_y(y){ return y; }
 
-/* ---------- Preview modal ---------- */
+/* ================================================================
+   PREVIEW MODAL
+   ================================================================ */
 let currentPreviewBlob = null;
 function showPreview(blob){
   if(currentPreviewBlob && currentPreviewBlob.__url) URL.revokeObjectURL(currentPreviewBlob.__url);
@@ -676,7 +809,9 @@ els.previewDownload.addEventListener('click', () => {
   toast('Downloaded ✔');
 });
 
-/* ---------- Save as PDF ---------- */
+/* ================================================================
+   SAVE AS PDF
+   ================================================================ */
 els.exportPdf.addEventListener('click', async () => {
   if(!state.pdfDoc) return;
   els.exportPdf.disabled = true;
@@ -693,7 +828,9 @@ els.exportPdf.addEventListener('click', async () => {
   }
 });
 
-/* ---------- Save as DOCX ---------- */
+/* ================================================================
+   SAVE AS DOCX
+   ================================================================ */
 els.exportDocx.addEventListener('click', async () => {
   if(!state.pdfDoc) return;
   if(typeof docx === 'undefined'){ toast('DOCX library failed to load.', 4000); return; }
@@ -711,28 +848,21 @@ els.exportDocx.addEventListener('click', async () => {
         spacing: { after: 200 },
       }));
 
-      const sorted = [...ps.lines].sort((a, b) => a.originalBaseline - b.originalBaseline);
-      let prevBaseline = null;
-
-      for(const l of sorted){
-        const text = (l.el.textContent || '').trim();
+      const sorted = [...ps.paras].sort((a,b) => parseFloat(a.el.style.top) - parseFloat(b.el.style.top));
+      for(const para of sorted){
+        const text = (para.el.textContent || '').trim();
         if(!text) continue;
-        // Approximate paragraph grouping: if baseline jump is large, new paragraph
-        const gapBig = prevBaseline !== null && (l.originalBaseline - prevBaseline) > l.fontSize * 1.8;
-        if(gapBig){
-          children.push(new Paragraph({ children: [ new TextRun({ text: '' }) ], spacing: { after: 60 } }));
-        }
         children.push(new Paragraph({
-          alignment: alignMap[l.alignment] || AlignmentType.LEFT,
+          alignment: alignMap[para.alignment] || AlignmentType.LEFT,
           children: [ new TextRun({
             text,
-            font: l.font.name,
-            bold: l.font.bold,
-            italics: l.font.italic,
-            size: Math.max(8, Math.min(72, Math.round(l.fontSize * 2))),
+            font: para.font.name,
+            bold: para.font.bold,
+            italics: para.font.italic,
+            size: Math.max(8, Math.min(72, Math.round(para.fontSize * 2))),
           }) ],
+          spacing: { after: 120 },
         }));
-        prevBaseline = l.originalBaseline;
       }
     }
 
@@ -748,5 +878,7 @@ els.exportDocx.addEventListener('click', async () => {
   }
 });
 
-/* ---------- Boot ---------- */
+/* ================================================================
+   BOOT
+   ================================================================ */
 (async () => { state.fonts = await loadMetricFonts(); })();
