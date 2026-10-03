@@ -29,6 +29,7 @@ const els = {
   previewDownload: document.getElementById('previewDownload'),
   alignToolbar: document.getElementById('alignToolbar'),
   themeToggle:  document.getElementById('themeToggle'),
+  fontSelect:   document.getElementById('fontSelect'),
 };
 
 const state = { pdfBytes:null, pdfDoc:null, pages:[], fonts:{}, focusedPara:null };
@@ -66,6 +67,17 @@ els.themeToggle.addEventListener('click', () => {
 document.getElementById('showOutlines').addEventListener('change', e => {
   document.body.classList.toggle('show-outlines', e.target.checked);
 });
+
+/* -------- Font families -------- */
+const FONT_CHOICES = {
+  auto:    null,
+  sans:    'Arial, Helvetica, sans-serif',
+  serif:   '"Times New Roman", Times, serif',
+  mono:    '"Courier New", Courier, monospace',
+  georgia: 'Georgia, "Times New Roman", serif',
+  times:   '"Times New Roman", Times, serif',
+  helvetica:'Helvetica, Arial, sans-serif',
+};
 
 /* -------- Metric fonts -------- */
 async function tryFetchFont(url){
@@ -242,7 +254,7 @@ function detectAlignment(lines, fontSize){
 }
 
 /* ================================================================
-   LOAD PDF — build ONE editable box per paragraph
+   LOAD PDF
    ================================================================ */
 async function loadPdf(arrayBuffer, fileName){
   state.pdfBytes = new Uint8Array(arrayBuffer);
@@ -305,7 +317,6 @@ async function loadPdf(arrayBuffer, fileName){
       const cLines = cluster.lines;
       const left = Math.min(...cLines.map(l => l.left));
       const right = Math.max(...cLines.map(l => l.right));
-      const top = Math.min(...cLines.map(l => l.top));
       const baseline1 = cLines[0].baseline;
       const fontSize = cluster.fontSize;
       const lineHeight = cluster.lineHeight;
@@ -313,7 +324,6 @@ async function loadPdf(arrayBuffer, fileName){
       const font = cLines[0].font;
       const width = right - left;
 
-      // Full paragraph text (join lines with a space)
       let text = '';
       for(let i = 0; i < cLines.length; i++){
         const t = cLines[i].text;
@@ -328,7 +338,6 @@ async function loadPdf(arrayBuffer, fileName){
       el.spellcheck = false;
       el.textContent = text;
 
-      // For alignment, the box must extend to the full paragraph width
       const boxWidth = width + fontSize * 0.5;
       let boxLeft = left;
       if(alignment === 'right')       boxLeft = right - boxWidth;
@@ -348,7 +357,7 @@ async function loadPdf(arrayBuffer, fileName){
         el,
         originalText: text,
         originalTop: baseline1 - fontSize * 1.15,
-        originalHeight: 0,   // measured after appending
+        originalHeight: 0,
         currentHeight: 0,
         left: boxLeft,
         width: boxWidth,
@@ -363,6 +372,7 @@ async function loadPdf(arrayBuffer, fileName){
         })),
         changed: false,
         isNew: false,
+        fontOverride: null,
       };
       pageState.paras.push(pstate);
 
@@ -382,13 +392,11 @@ async function loadPdf(arrayBuffer, fileName){
       wrap.appendChild(el);
     }
 
-    // Measure natural heights AFTER all paragraphs exist
     for(const pstate of pageState.paras){
       pstate.originalHeight = pstate.el.offsetHeight;
       pstate.currentHeight = pstate.el.offsetHeight;
     }
 
-    // Double-click empty space → new paragraph
     wrap.addEventListener('dblclick', e => {
       if(e.target.classList && e.target.classList.contains('para')) return;
       e.preventDefault();
@@ -427,7 +435,6 @@ function handleParaInput(pageState, pstate){
   updateStats();
 }
 
-/* The magic: shift all following paragraphs up/down based on height deltas */
 function relayoutPage(pageState){
   const sorted = [...pageState.paras].sort((a,b) => a.originalTop - b.originalTop);
   let shift = 0;
@@ -480,6 +487,7 @@ function createNewParagraph(pageState, x, y){
     originalLines: [],
     changed: true,
     isNew: true,
+    fontOverride: null,
   };
   pageState.paras.push(pstate);
 
@@ -503,7 +511,7 @@ function createNewParagraph(pageState, x, y){
 }
 
 /* ================================================================
-   ALIGNMENT TOOLBAR
+   TOOLBAR
    ================================================================ */
 function showAlignToolbar(pstate){
   state.focusedPara = pstate;
@@ -521,9 +529,15 @@ function showAlignToolbar(pstate){
   tb.style.left = left + 'px';
   tb.style.top = top + 'px';
   tb.style.visibility = '';
-  tb.querySelectorAll('button').forEach(b => {
-    if(b.dataset.align) b.classList.toggle('active', b.dataset.align === pstate.alignment);
+  tb.querySelectorAll('button[data-align]').forEach(b => {
+    b.classList.toggle('active', b.dataset.align === pstate.alignment);
   });
+  // Sync the font dropdown with the current state
+  if(pstate.fontOverride){
+    els.fontSelect.value = pstate.fontOverride;
+  } else {
+    els.fontSelect.value = 'auto';
+  }
 }
 function hideAlignToolbar(){
   state.focusedPara = null;
@@ -541,21 +555,15 @@ function applyAlignment(pstate, align){
   pstate.el.style.textAlign = align;
   pstate.changed = true;
   pstate.el.classList.add('changed');
-
-  // Reposition box so anchor matches the alignment
-  const px = pstate.el.getBoundingClientRect();
-  const width = pstate.el.offsetWidth;
-  const pageWrap = pstate.el.parentElement;
-  const pageRect = pageWrap.getBoundingClientRect();
   const currentLeft = parseFloat(pstate.el.style.left);
+  const width = pstate.el.offsetWidth;
   const currentRight = currentLeft + width;
   let boxLeft = currentLeft;
-  if(align === 'right')       boxLeft = currentRight - width;   // unchanged (box ends at same right)
+  if(align === 'right')       boxLeft = currentRight - width;
   else if(align === 'center') boxLeft = ((currentLeft + currentRight) / 2) - width / 2;
-  else                         boxLeft = currentLeft;            // for left, keep as-is
+  else                         boxLeft = currentLeft;
   pstate.el.style.left = boxLeft + 'px';
-
-  els.alignToolbar.querySelectorAll('button').forEach(b =>
+  els.alignToolbar.querySelectorAll('button[data-align]').forEach(b =>
     b.classList.toggle('active', b.dataset.align === align));
   if(document.activeElement !== pstate.el) pstate.el.focus();
   updateStats();
@@ -578,6 +586,25 @@ els.alignToolbar.addEventListener('click', e => {
     updateStats();
     toast('Paragraph deleted');
   }
+});
+
+/* Font picker change */
+els.fontSelect.addEventListener('change', e => {
+  if(!state.focusedPara) return;
+  const key = e.target.value;
+  const p = state.focusedPara;
+  p.fontOverride = key === 'auto' ? null : key;
+  if(key === 'auto'){
+    p.el.style.fontFamily = cssFamilyFor(p.font);
+  } else {
+    p.el.style.fontFamily = FONT_CHOICES[key] || cssFamilyFor(p.font);
+  }
+  // Force a small reflow to update height
+  handleParaInput(
+    state.pages.find(ps => ps.paras.includes(p)),
+    p
+  );
+  if(document.activeElement !== p.el) p.el.focus();
 });
 
 document.addEventListener('keydown', e => {
@@ -628,7 +655,7 @@ els.drop.addEventListener('drop', async e => {
 });
 
 /* ================================================================
-   PDF TEXT HELPERS
+   PDF HELPERS
    ================================================================ */
 function wrapTextForPdf(text, font, fontSize, maxWidth){
   const words = text.split(/\s+/).filter(Boolean);
@@ -651,10 +678,7 @@ function measurePdf(font, text, size){
 }
 function drawJustifiedLine(op, font, text, size, xStart, targetWidth, y, rgb){
   const words = text.split(/\s+/).filter(Boolean);
-  if(words.length < 2){
-    op.drawText(text, { x:xStart, y, size, font, color: rgb(0,0,0) });
-    return;
-  }
+  if(words.length < 2){ op.drawText(text, { x:xStart, y, size, font, color: rgb(0,0,0) }); return; }
   let wWidth = 0;
   for(const w of words) wWidth += measurePdf(font, w, size);
   const gapPer = (targetWidth - wWidth) / (words.length - 1);
@@ -667,7 +691,7 @@ function drawJustifiedLine(op, font, text, size, xStart, targetWidth, y, rgb){
 }
 
 /* ================================================================
-   BUILD PDF — reflow-aware, alignment-preserved
+   BUILD PDF
    ================================================================ */
 async function buildPdfBytes(){
   const { PDFDocument, StandardFonts, rgb } = PDFLib;
@@ -687,7 +711,22 @@ async function buildPdfBytes(){
     try{ embedded[k] = await outDoc.embedFont(bytes, { subset:true }); }
     catch(e){ console.warn('embed failed:', k, e); }
   }
-  const pickFont = f => embedded[metricKeyFor(f)] || fallback[metricKeyFor(f)];
+  const pickFont = (p) => {
+    // If user overrode to a specific family, force the metric-equivalent
+    if(p.fontOverride === 'serif' || p.fontOverride === 'times' || p.fontOverride === 'georgia'){
+      const key = 'serif' + (p.font.bold ? '-bold' : '-regular');
+      return embedded[key] || fallback[key];
+    }
+    if(p.fontOverride === 'mono'){
+      const key = 'mono' + (p.font.bold ? '-bold' : '-regular');
+      return embedded[key] || fallback[key];
+    }
+    if(p.fontOverride === 'sans' || p.fontOverride === 'helvetica'){
+      const key = 'sans' + (p.font.bold ? '-bold' : '-regular');
+      return embedded[key] || fallback[key];
+    }
+    return embedded[metricKeyFor(p.font)] || fallback[metricKeyFor(p.font)];
+  };
 
   const outPages = outDoc.getPages();
 
@@ -701,7 +740,6 @@ async function buildPdfBytes(){
     for(const para of ps.paras){
       if(!para.changed && !para.isNew) continue;
 
-      /* White-out original lines */
       if(!para.isNew){
         for(const ln of para.originalLines){
           const vpTop    = ln.baseline - ln.fontSize * 1.10;
@@ -720,11 +758,9 @@ async function buildPdfBytes(){
       const text = (para.el.textContent || '').replace(/\s+/g, ' ').trim();
       if(!text) continue;
 
-      /* Compute current top position (post-reflow) */
       const elTopVp = parseFloat(para.el.style.top);
       const shiftY = elTopVp - para.originalTop;
 
-      /* First baseline: use original first line's baseline + reflow shift */
       let firstBaselineVp;
       if(para.originalLines && para.originalLines.length > 0){
         firstBaselineVp = para.originalLines[0].baseline + shiftY;
@@ -734,7 +770,6 @@ async function buildPdfBytes(){
       }
       const firstBaselinePdf = ph - firstBaselineVp * sy;
 
-      /* Line spacing: from original, or from CSS line-height */
       let lineHeightPt;
       if(para.originalLines && para.originalLines.length > 1){
         let total = 0;
@@ -746,11 +781,10 @@ async function buildPdfBytes(){
         lineHeightPt = para.lineHeight * sy;
       }
 
-      const font = pickFont(para.font);
+      const font = pickFont(para);
       const fontPt = para.fontSize * sy;
       const align = para.alignment || 'left';
 
-      /* Box left + width in PDF points */
       const boxLeftPt = parseFloat(para.el.style.left) * sx;
       const boxWidthPt = para.el.offsetWidth * sx;
 
@@ -760,13 +794,10 @@ async function buildPdfBytes(){
         const lineText = wrapped[j];
         const lineWidth = measurePdf(font, lineText, fontPt);
         const isLast = (j === wrapped.length - 1);
-
         let x = boxLeftPt;
         if(align === 'right')       x = boxLeftPt + boxWidthPt - lineWidth;
         else if(align === 'center') x = boxLeftPt + (boxWidthPt - lineWidth) / 2;
-
         const y = firstBaselinePdf - j * lineHeightPt;
-
         try{
           if(align === 'justify' && !isLast && wrapped.length > 1){
             drawJustifiedLine(op, font, lineText, fontPt, boxLeftPt, boxWidthPt, y, rgb);
@@ -783,7 +814,7 @@ async function buildPdfBytes(){
 }
 
 /* ================================================================
-   PREVIEW MODAL
+   PREVIEW + DOWNLOAD
    ================================================================ */
 let currentPreviewBlob = null;
 function showPreview(blob){
@@ -809,9 +840,6 @@ els.previewDownload.addEventListener('click', () => {
   toast('Downloaded ✔');
 });
 
-/* ================================================================
-   SAVE AS PDF
-   ================================================================ */
 els.exportPdf.addEventListener('click', async () => {
   if(!state.pdfDoc) return;
   els.exportPdf.disabled = true;
