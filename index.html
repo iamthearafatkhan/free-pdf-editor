@@ -5,7 +5,7 @@
 <meta name="viewport" content="width=device-width, initial-scale=1" />
 
 <title>Free PDF Editor — Edit Text in Any PDF Online (No Sign-Up, No Subscription)</title>
-<meta name="description" content="Free browser-based PDF editor. Upload any PDF, edit text like in Word with real paragraph reflow. Change alignment, add new text anywhere. Save as PDF or DOCX. No sign-up, no subscription, no uploads." />
+<meta name="description" content="Free browser-based PDF editor. Upload any PDF, edit text like in Word. Change alignment, add text anywhere. Save as PDF or DOCX. No sign-up, no subscription, no uploads." />
 <meta name="keywords" content="free pdf editor, edit pdf online, pdf text editor, edit pdf without subscription, browser pdf editor, online pdf editor free, edit pdf like word, free pdf editor no sign up, pdf editor no watermark" />
 <meta name="robots" content="index, follow, max-image-preview:large" />
 <meta name="author" content="Arafat Khan" />
@@ -51,9 +51,10 @@
   "offers": { "@type": "Offer", "price": "0", "priceCurrency": "USD" },
   "featureList": [
     "Upload any PDF and edit it like Word",
-    "Real paragraph reflow — delete text, the rest pulls up",
+    "Real paragraph reflow",
+    "Text stays invisible until you edit — canvas font preserved",
     "Add text anywhere by double-clicking",
-    "Change alignment: left, center, right, justify",
+    "Left, center, right, and justified alignment",
     "Day and night theme",
     "Save as PDF or DOCX",
     "100% browser-based, no uploads"
@@ -70,10 +71,10 @@
 
 <div class="sr-only">
   <h1>Free PDF Editor — Edit Text in Any PDF Online</h1>
-  <p>Upload any PDF and edit it like a Word document. Real paragraph reflow, alignment controls, add text anywhere.</p>
+  <p>Upload any PDF and edit it like a Word document.</p>
 </div>
 
-<div class="align-toolbar" id="alignToolbar" role="toolbar" aria-label="Text alignment">
+<div class="align-toolbar" id="alignToolbar" role="toolbar" aria-label="Paragraph tools">
   <button data-align="left" title="Left (Ctrl+Shift+L)" aria-label="Left align">
     <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round"><line x1="3" y1="6" x2="21" y2="6"/><line x1="3" y1="12" x2="15" y2="12"/><line x1="3" y1="18" x2="19" y2="18"/></svg>
   </button>
@@ -87,6 +88,19 @@
     <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round"><line x1="3" y1="6" x2="21" y2="6"/><line x1="3" y1="12" x2="21" y2="12"/><line x1="3" y1="18" x2="21" y2="18"/></svg>
   </button>
   <div class="sep"></div>
+  <label class="font-picker" title="Font family">
+    <span class="font-label">Font</span>
+    <select id="fontSelect">
+      <option value="auto">Auto (match PDF)</option>
+      <option value="sans">Sans-serif</option>
+      <option value="serif">Serif</option>
+      <option value="mono">Monospace</option>
+      <option value="georgia">Georgia</option>
+      <option value="times">Times</option>
+      <option value="helvetica">Helvetica / Arial</option>
+    </select>
+  </label>
+  <div class="sep"></div>
   <button data-action="delete" title="Delete this paragraph" aria-label="Delete paragraph">
     <svg viewBox="0 0 24 24" fill="none" stroke="#dc2626" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M3 6h18"/><path d="M8 6V4a2 2 0 0 1 2-2h4a2 2 0 0 1 2 2v2"/><path d="M19 6l-1 14a2 2 0 0 1-2 2H8a2 2 0 0 1-2-2L5 6"/></svg>
   </button>
@@ -97,16 +111,17 @@
 
   <div class="side-section">
     <h2>How to use</h2>
-    <div class="step"><div class="n">1</div><div class="t"><b>Open your PDF</b><small>Click "Open PDF" or drag a file. It converts to an editable document.</small></div></div>
-    <div class="step"><div class="n">2</div><div class="t"><b>Click any paragraph</b><small>Edit like in Word. Delete text and the rest flows up.</small></div></div>
-    <div class="step"><div class="n">3</div><div class="t"><b>Add new text anywhere</b><small>Double-click empty space to start a new paragraph.</small></div></div>
-    <div class="step"><div class="n">4</div><div class="t"><b>Preview &amp; save</b><small>Save as PDF or DOCX with original alignment preserved.</small></div></div>
+    <div class="step"><div class="n">1</div><div class="t"><b>Open your PDF</b><small>Click "Open PDF" or drag a file. It becomes editable.</small></div></div>
+    <div class="step"><div class="n">2</div><div class="t"><b>Click any paragraph</b><small>A blue outline appears. The original text stays visible.</small></div></div>
+    <div class="step"><div class="n">3</div><div class="t"><b>Start typing</b><small>Text reflows like Word. Delete a word — the rest pulls up.</small></div></div>
+    <div class="step"><div class="n">4</div><div class="t"><b>Save</b><small>Save as PDF (preview first) or DOCX for full editing.</small></div></div>
   </div>
 
   <div class="side-section">
     <h2>Tips</h2>
-    <p>· Text reflows like in Word. Delete a word — the rest pulls up.</p>
-    <p>· Change alignment with the toolbar or <span class="kbd">Ctrl+Shift+L</span>/<span class="kbd">E</span>/<span class="kbd">R</span>/<span class="kbd">J</span>.</p>
+    <p>· Text stays pixel-perfect until you edit it — you won't see any font swap on click.</p>
+    <p>· Once edited, use <b>Font</b> in the toolbar to match the PDF's font.</p>
+    <p>· <span class="kbd">Ctrl+Shift+L</span> <span class="kbd">E</span> <span class="kbd">R</span> <span class="kbd">J</span> for alignment.</p>
     <label class="outline-toggle"><input type="checkbox" id="showOutlines" /><span>Show paragraph outlines</span></label>
   </div>
 
@@ -160,7 +175,7 @@
   <div class="viewport" id="viewport">
     <div id="drop" class="drop">
       <h2>Drop a PDF here, or click "Open PDF"</h2>
-      <p>Your PDF becomes an editable document — like Word, but for PDFs.</p>
+      <p>Your PDF becomes an editable document. Text stays pixel-perfect until you edit it.</p>
       <p class="seo-hint">Free online PDF editor — no sign-up, no subscription, no watermark.<br>Real paragraph reflow. Alignment preserved. Save as PDF or DOCX.</p>
     </div>
     <div id="pages"></div>
