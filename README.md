@@ -2,7 +2,7 @@
 
 **Free browser-based PDF editor — edit text in any PDF like Word.**
 
-🔗 **Live:** [YOUR-USERNAME.github.io/pdf-editor](https://YOUR-USERNAME.github.io/pdf-editor/)
+🔗 **Live:** [FREE PDF Editor](https://pdfeditnow.pages.dev/)
 
 ## Why this exists
 
