@@ -4,16 +4,14 @@
 <meta charset="UTF-8" />
 <meta name="viewport" content="width=device-width, initial-scale=1" />
 
-<!-- ================= PRIMARY SEO ================= -->
 <title>Free PDF Editor — Edit Text in Any PDF Online (No Sign-Up, No Subscription)</title>
-<meta name="description" content="Free browser-based PDF editor. Edit text inside any PDF like Word — add text, edit paragraphs, keep original alignment. Save as PDF or DOCX. No sign-up, no subscription, no uploads. Your file never leaves your device." />
+<meta name="description" content="Free browser-based PDF editor. Edit text inside any PDF like Word — click any line, edit it, keep original alignment. Save as PDF or DOCX. No sign-up, no subscription, no uploads. Your file never leaves your device." />
 <meta name="keywords" content="free pdf editor, edit pdf online, pdf text editor, edit pdf without subscription, browser pdf editor, online pdf editor free, edit pdf like word, free pdf editor no sign up, pdf editor no watermark, edit pdf without acrobat" />
 <meta name="robots" content="index, follow, max-image-preview:large" />
 <meta name="author" content="Arafat Khan" />
 <meta name="theme-color" content="#3b5bdb" />
 <link rel="canonical" href="https://pdfeditnow.pages.dev/" />
 
-<!-- ================= OPEN GRAPH ================= -->
 <meta property="og:type" content="website" />
 <meta property="og:title" content="Free PDF Editor — Edit Text in Any PDF Online" />
 <meta property="og:description" content="Edit text in any PDF like Word. Free, private, browser-based. No subscription, no sign-up, no uploads." />
@@ -24,7 +22,6 @@
 <meta property="og:image:height" content="630" />
 <meta property="og:locale" content="en_US" />
 
-<!-- ================= TWITTER ================= -->
 <meta name="twitter:card" content="summary_large_image" />
 <meta name="twitter:title" content="Free PDF Editor — Edit Text in Any PDF" />
 <meta name="twitter:description" content="Free browser-based PDF editor. No subscription, no sign-up, no uploads." />
@@ -32,7 +29,6 @@
 
 <link rel="icon" href="data:image/svg+xml,<svg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 100 100'><rect width='100' height='100' rx='20' fill='%233b5bdb'/><text x='50' y='68' font-size='56' font-family='Arial,sans-serif' font-weight='bold' fill='white' text-anchor='middle'>P</text></svg>" />
 
-<!-- ================= STRUCTURED DATA ================= -->
 <script type="application/ld+json">
 {
   "@context": "https://schema.org",
@@ -54,9 +50,8 @@
   },
   "offers": { "@type": "Offer", "price": "0", "priceCurrency": "USD" },
   "featureList": [
-    "Edit text inside any PDF",
-    "Word-like paragraph reflow",
-    "Preserves original alignment automatically",
+    "Edit text inside any PDF, line by line",
+    "Original alignment preserved automatically",
     "Left, center, right, and justified support",
     "Save as PDF or DOCX",
     "100% browser-based, no uploads"
@@ -82,7 +77,6 @@
     display:flex; height:100vh; overflow:hidden;
   }
 
-  /* ===== SIDEBAR ===== */
   aside{
     width:var(--sidebar-w); flex:0 0 var(--sidebar-w);
     background:var(--panel); border-right:1px solid var(--border);
@@ -137,7 +131,6 @@
   }
   .outline-toggle input{accent-color:var(--brand); cursor:pointer; margin:0;}
 
-  /* ===== MAIN ===== */
   main{ flex:1; display:flex; flex-direction:column; overflow:hidden; min-width:0; }
 
   header.topbar{
@@ -202,17 +195,18 @@
   }
   .page canvas{display:block;}
 
-  /* Editable paragraph */
+  /* Editable LINE box — one per visual line, no wrapping */
   .para{
-    position:absolute; margin:0; padding:0;
+    position:absolute; margin:0; padding:0 1px;
     color:transparent; background:transparent;
     border:1px solid transparent; outline:none;
-    white-space:pre-wrap; word-wrap:break-word; overflow-wrap:break-word;
+    white-space:pre;                 /* no wrap — keeps text on one line */
+    overflow:visible;
     font-family:Arial, Helvetica, sans-serif;
-    transition:top .1s ease, left .1s ease;
     z-index:5;
+    caret-color:#000;
   }
-  .para:hover{border-color:rgba(59,91,219,.35); background:rgba(59,91,219,.03);}
+  .para:hover{border-color:rgba(59,91,219,.4); background:rgba(59,91,219,.04);}
   .para:focus{
     color:#000; background:#fff;
     border-color:var(--brand);
@@ -228,10 +222,9 @@
     background:rgba(59,91,219,.02);
   }
   .show-outlines .para.changed{
-    border-color:rgba(234,88,12,.7);
+    border-color:rgba(234,88,12,.75);
     background:rgba(251,191,36,.10);
   }
-  .show-outlines .para:hover{background:rgba(59,91,219,.08);}
 
   /* ===== ALIGNMENT TOOLBAR ===== */
   .align-toolbar{
@@ -249,17 +242,10 @@
   .align-toolbar.show{display:flex;}
   .align-toolbar button{
     padding:7px;
-    border:none;
-    background:transparent;
-    border-radius:6px;
-    color:var(--muted);
-    cursor:pointer;
-    display:inline-flex;
-    align-items:center;
-    justify-content:center;
-    font-size:0;
-    min-width:32px;
-    min-height:32px;
+    border:none; background:transparent; border-radius:6px;
+    color:var(--muted); cursor:pointer;
+    display:inline-flex; align-items:center; justify-content:center;
+    font-size:0; min-width:32px; min-height:32px;
   }
   .align-toolbar button:hover{background:#eef2ff; color:var(--brand);}
   .align-toolbar button.active{background:var(--brand); color:#fff;}
@@ -357,50 +343,41 @@
 
 <div class="sr-only">
   <h1>Free PDF Editor — Edit Text in Any PDF Online</h1>
-  <p>FreePDF Editor is a browser-based PDF editor that lets you edit text inside any PDF like Word. No sign-up, no subscription, no uploads. Left, center, right, and justified alignment preserved.</p>
+  <p>FreePDF Editor is a browser-based PDF editor that lets you edit text inside any PDF line by line. No sign-up, no subscription, no uploads. Original alignment preserved.</p>
 </div>
 
-<!-- ================= ALIGNMENT TOOLBAR ================= -->
+<!-- Alignment toolbar -->
 <div class="align-toolbar" id="alignToolbar" role="toolbar" aria-label="Text alignment">
   <button data-align="left" title="Left align (Ctrl+Shift+L)" aria-label="Align left">
     <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round">
-      <line x1="3" y1="6" x2="21" y2="6"/>
-      <line x1="3" y1="12" x2="15" y2="12"/>
-      <line x1="3" y1="18" x2="19" y2="18"/>
+      <line x1="3" y1="6" x2="21" y2="6"/><line x1="3" y1="12" x2="15" y2="12"/><line x1="3" y1="18" x2="19" y2="18"/>
     </svg>
   </button>
   <button data-align="center" title="Center (Ctrl+Shift+E)" aria-label="Align center">
     <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round">
-      <line x1="3" y1="6" x2="21" y2="6"/>
-      <line x1="6" y1="12" x2="18" y2="12"/>
-      <line x1="4" y1="18" x2="20" y2="18"/>
+      <line x1="3" y1="6" x2="21" y2="6"/><line x1="6" y1="12" x2="18" y2="12"/><line x1="4" y1="18" x2="20" y2="18"/>
     </svg>
   </button>
   <button data-align="right" title="Right align (Ctrl+Shift+R)" aria-label="Align right">
     <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round">
-      <line x1="3" y1="6" x2="21" y2="6"/>
-      <line x1="9" y1="12" x2="21" y2="12"/>
-      <line x1="5" y1="18" x2="21" y2="18"/>
+      <line x1="3" y1="6" x2="21" y2="6"/><line x1="9" y1="12" x2="21" y2="12"/><line x1="5" y1="18" x2="21" y2="18"/>
     </svg>
   </button>
   <button data-align="justify" title="Justify (Ctrl+Shift+J)" aria-label="Justify">
     <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round">
-      <line x1="3" y1="6" x2="21" y2="6"/>
-      <line x1="3" y1="12" x2="21" y2="12"/>
-      <line x1="3" y1="18" x2="21" y2="18"/>
+      <line x1="3" y1="6" x2="21" y2="6"/><line x1="3" y1="12" x2="21" y2="12"/><line x1="3" y1="18" x2="21" y2="18"/>
     </svg>
   </button>
   <div class="sep"></div>
-  <button data-action="delete" title="Delete this paragraph" aria-label="Delete paragraph">
+  <button data-action="clear" title="Clear this line" aria-label="Clear line">
     <svg viewBox="0 0 24 24" fill="none" stroke="#dc2626" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
-      <path d="M3 6h18"/>
-      <path d="M8 6V4a2 2 0 0 1 2-2h4a2 2 0 0 1 2 2v2"/>
+      <path d="M3 6h18"/><path d="M8 6V4a2 2 0 0 1 2-2h4a2 2 0 0 1 2 2v2"/>
       <path d="M19 6l-1 14a2 2 0 0 1-2 2H8a2 2 0 0 1-2-2L5 6"/>
     </svg>
   </button>
 </div>
 
-<!-- ================= SIDEBAR ================= -->
+<!-- Sidebar -->
 <aside>
   <div class="brand">
     <span class="dot"></span>
@@ -415,11 +392,11 @@
     </div>
     <div class="step">
       <div class="n">2</div>
-      <div class="t"><b>Click any paragraph</b><small>It becomes editable like in Word.</small></div>
+      <div class="t"><b>Click any line of text</b><small>Each line is independently editable.</small></div>
     </div>
     <div class="step">
       <div class="n">3</div>
-      <div class="t"><b>Type or delete</b><small>The text reflows automatically — remaining words slide to fill the gap.</small></div>
+      <div class="t"><b>Type or delete</b><small>Original alignment stays. Change it only if you want.</small></div>
     </div>
     <div class="step">
       <div class="n">4</div>
@@ -429,22 +406,22 @@
 
   <div class="side-section">
     <h2>Tips</h2>
-    <p>· Alignment is auto-preserved from the original PDF — you only change it if you want to.</p>
-    <p>· Edited paragraphs turn <span style="background:#fff8b8;padding:0 4px;">yellow</span>.</p>
+    <p>· Every line is one box — editing one line never moves others.</p>
+    <p>· Alignment is preserved from the PDF. Left / center / right / justify ready when you need it.</p>
     <p>· Shortcuts: <span class="kbd">Ctrl+Shift+L</span> <span class="kbd">E</span> <span class="kbd">R</span> <span class="kbd">J</span></p>
     <label class="outline-toggle">
       <input type="checkbox" id="showOutlines" />
-      <span>Show paragraph outlines</span>
+      <span>Show line outlines</span>
     </label>
   </div>
 
   <div class="side-section">
     <h2>Document stats</h2>
     <div class="stat-row"><span class="k">Pages</span><span class="v" id="statPages">0</span></div>
-    <div class="stat-row"><span class="k">Paragraphs</span><span class="v" id="statParas">0</span></div>
+    <div class="stat-row"><span class="k">Editable lines</span><span class="v" id="statParas">0</span></div>
     <div class="stat-row"><span class="k">Words</span><span class="v" id="statWords">0</span></div>
     <div class="stat-row"><span class="k">Characters</span><span class="v" id="statChars">0</span></div>
-    <div class="stat-row"><span class="k">Edited paragraphs</span><span class="v" id="statEdited">0</span></div>
+    <div class="stat-row"><span class="k">Edited lines</span><span class="v" id="statEdited">0</span></div>
     <div class="stat-row"><span class="k">Fonts loaded</span><span class="v" id="statFonts">—</span></div>
   </div>
 
@@ -455,7 +432,7 @@
         <svg viewBox="0 0 24 24" fill="currentColor" aria-hidden="true"><path d="M12 .5C5.7.5.5 5.7.5 12c0 5.1 3.3 9.4 7.9 10.9.6.1.8-.3.8-.6v-2c-3.2.7-3.9-1.5-3.9-1.5-.5-1.3-1.3-1.7-1.3-1.7-1.1-.7.1-.7.1-.7 1.2.1 1.8 1.2 1.8 1.2 1 1.8 2.8 1.3 3.5 1 .1-.8.4-1.3.8-1.6-2.6-.3-5.3-1.3-5.3-5.8 0-1.3.5-2.3 1.2-3.2-.1-.3-.5-1.5.1-3.1 0 0 1-.3 3.3 1.2.9-.3 1.9-.4 2.9-.4 1 0 2 .1 2.9.4 2.3-1.5 3.3-1.2 3.3-1.2.6 1.6.2 2.8.1 3.1.8.9 1.2 1.9 1.2 3.2 0 4.5-2.7 5.5-5.3 5.8.4.4.8 1.1.8 2.2v3.3c0 .3.2.7.8.6 4.7-1.6 7.9-5.8 7.9-10.9C23.5 5.7 18.3.5 12 .5z"/></svg>
       </a>
       <a href="https://www.linkedin.com/in/iamthearafatkhan/" target="_blank" rel="noopener noreferrer" title="LinkedIn" aria-label="LinkedIn profile">
-        <svg viewBox="0 0 24 24" fill="currentColor" aria-hidden="true"><path d="M20.5 2h-17C2.7 2 2 2.7 2 3.5v17C2 21.3 2.7 22 3.5 22h17c.8 0 1.5-.7 1.5-1.5v-17C22 2.7 21.3 2 20.5 2zM8 19H5V9h3v10zM6.5 7.7c-.9 0-1.7-.7-1.7-1.7s.7-1.7 1.7-1.7 1.7.7 1.7 1.7-.8 1.7-1.7 1.7zM19 19h-3v-5.3c0-1.3-.5-2.1-1.6-2.1-.9 0-1.4.6-1.6 1.2-.1.2-.1.5-.1.8V19h-3V9h3v1.3c.4-.6 1.1-1.5 2.7-1.5 2 3.6 1.3 3.6 4V19z"/></svg>
+        <svg viewBox="0 0 24 24" fill="currentColor" aria-hidden="true"><path d="M20.5 2h-17C2.7 2 2 2.7 2 3.5v17C2 21.3 2.7 22 3.5 22h17c.8 0 1.5-.7 1.5-1.5v-17C22 2.7 21.3 2 20.5 2zM8 19H5V9h3v10zM6.5 7.7c-.9 0-1.7-.7-1.7-1.7s.7-1.7 1.7-1.7 1.7.7 1.7 1.7-.8 1.7-1.7 1.7zM19 19h-3v-5.3c0-1.3-.5-2.1-1.6-2.1-.9 0-1.4.6-1.6 1.2-.1.2-.1.5-.1.8V19h-3V9h3v1.3c.4-.6 1.1-1.5 2.7-1.5 2 0 3.6 1.3 3.6 4V19z"/></svg>
       </a>
       <a href="https://arafatkhan.vercel.app" target="_blank" rel="noopener noreferrer" title="Portfolio" aria-label="Portfolio website">
         <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true">
@@ -468,7 +445,7 @@
   </div>
 </aside>
 
-<!-- ================= MAIN ================= -->
+<!-- Main -->
 <main>
   <header class="topbar">
     <div class="left-side">
@@ -559,7 +536,7 @@ const els = {
   alignToolbar: document.getElementById('alignToolbar'),
 };
 
-const state = { pdfBytes:null, pdfDoc:null, pages:[], fonts:{}, focusedPara:null };
+const state = { pdfBytes:null, pdfDoc:null, pages:[], fonts:{}, focusedLine:null };
 
 function toast(msg, ms = 2500){
   els.status.textContent = msg;
@@ -575,9 +552,7 @@ function downloadBlob(blob, filename){
   document.body.appendChild(a); a.click();
   setTimeout(() => { document.body.removeChild(a); URL.revokeObjectURL(url); }, 500);
 }
-
 document.getElementById('year').textContent = new Date().getFullYear();
-
 document.getElementById('showOutlines').addEventListener('change', e => {
   document.body.classList.toggle('show-outlines', e.target.checked);
 });
@@ -649,7 +624,7 @@ function cssFamilyFor(f){
 }
 
 /* ================================================================
-   3. GROUP ITEMS INTO LINES
+   3. GROUP ITEMS → LINES
 ================================================================ */
 function groupItemsIntoLines(items){
   const lines = [];
@@ -703,7 +678,7 @@ function joinItemsText(items){
 }
 
 /* ================================================================
-   4. GROUP LINES INTO PARAGRAPHS
+   4. GROUP LINES → PARAGRAPH CLUSTERS (used only for alignment + DOCX)
 ================================================================ */
 function groupLinesIntoParagraphs(lines){
   if(!lines.length) return [];
@@ -748,13 +723,35 @@ function groupLinesIntoParagraphs(lines){
   }
   if(curLines.length) paras.push(finalizeParagraph(curLines));
 
-  console.log(`[paragraphs] lines=${lines.length}, minGap=${minGap.toFixed(1)}, breakGap=${breakGap.toFixed(1)}, paragraphs=${paras.length}`);
+  console.log(`[paragraphs] lines=${lines.length}, minGap=${minGap.toFixed(1)}, paragraphs=${paras.length}`);
   return paras;
 }
 
-/* ================================================================
-   5. ALIGNMENT DETECTION
-================================================================ */
+function finalizeParagraph(lines){
+  const left   = Math.min(...lines.map(l => l.left));
+  const right  = Math.max(...lines.map(l => l.right));
+  const top    = Math.min(...lines.map(l => l.top));
+  const bottom = Math.max(...lines.map(l => l.bottom));
+  const fontSize = lines.reduce((s, l) => s + l.fontSize, 0) / lines.length;
+
+  let lineHeight = fontSize * 1.25;
+  if(lines.length > 1){
+    let total = 0;
+    for(let i = 1; i < lines.length; i++) total += lines[i].baseline - lines[i-1].baseline;
+    lineHeight = total / (lines.length - 1);
+  }
+
+  const alignment = detectAlignment(lines, fontSize);
+
+  return {
+    left, right, top, bottom,
+    width: right - left,
+    fontSize, lineHeight, alignment,
+    font: lines[0].font,
+    lines: lines,   // <-- references to actual line objects
+  };
+}
+
 function detectAlignment(lines, fontSize){
   if(lines.length <= 1) return 'left';
   const tol = Math.max(fontSize * 0.6, 3);
@@ -781,46 +778,7 @@ function detectAlignment(lines, fontSize){
 }
 
 /* ================================================================
-   6. FINALIZE PARAGRAPH
-================================================================ */
-function finalizeParagraph(lines){
-  let text = '';
-  for(const ln of lines){
-    if(!text){ text = ln.text; continue; }
-    if(text.endsWith('-')) text = text.slice(0, -1) + ln.text;
-    else text += ' ' + ln.text;
-  }
-  const left     = Math.min(...lines.map(l => l.left));
-  const right    = Math.max(...lines.map(l => l.right));
-  const top      = Math.min(...lines.map(l => l.top));
-  const bottom   = Math.max(...lines.map(l => l.bottom));
-  const fontSize = lines.reduce((s, l) => s + l.fontSize, 0) / lines.length;
-
-  let lineHeight = fontSize * 1.25;
-  if(lines.length > 1){
-    let total = 0;
-    for(let i = 1; i < lines.length; i++) total += lines[i].baseline - lines[i-1].baseline;
-    lineHeight = total / (lines.length - 1);
-  }
-
-  const alignment = detectAlignment(lines, fontSize);
-
-  return {
-    text, left, right, top, bottom,
-    width: right - left,
-    height: bottom - top,
-    fontSize, lineHeight, alignment,
-    font: lines[0].font,
-    lineCount: lines.length,
-    originalLines: lines.map(l => ({
-      x: l.left, baseline: l.baseline,
-      width: l.right - l.left, fontSize: l.fontSize,
-    })),
-  };
-}
-
-/* ================================================================
-   7. LOAD PDF
+   5. LOAD PDF — create one editable box per LINE
 ================================================================ */
 async function loadPdf(arrayBuffer, fileName){
   state.pdfBytes = new Uint8Array(arrayBuffer);
@@ -849,10 +807,13 @@ async function loadPdf(arrayBuffer, fileName){
     wrap.appendChild(canvas);
     els.pages.appendChild(wrap);
 
-    const pageState = { pdfWidth: viewport.width, pdfHeight: viewport.height,
-                        wrap, paras: [], pageNum: p };
+    const pageState = {
+      pdfWidth: viewport.width, pdfHeight: viewport.height,
+      wrap, lines: [], paragraphs: [], pageNum: p,
+    };
     wrap._pageState = pageState;
 
+    /* --- extract raw text items --- */
     const tc = await page.getTextContent();
     const styles = tc.styles || {};
     const rawItems = [];
@@ -880,63 +841,87 @@ async function loadPdf(arrayBuffer, fileName){
       });
     }
 
-    const lines         = groupItemsIntoLines(rawItems);
-    const paragraphDefs = groupLinesIntoParagraphs(lines);
+    /* --- group into lines then paragraph clusters --- */
+    const lines = groupItemsIntoLines(rawItems);
+    const paras = groupLinesIntoParagraphs(lines);
 
-    for(const para of paragraphDefs){
-      const el = document.createElement('div');
-      el.className = 'para';
-      el.contentEditable = 'true';
-      el.spellcheck = false;
-      el.textContent = para.text;
-      el.style.left       = para.left + 'px';
-      el.style.top        = para.top  + 'px';
-      el.style.width      = Math.max(para.width, 20) + 'px';
-      el.style.minHeight  = Math.max(para.height, para.lineHeight) + 'px';
-      el.style.fontSize   = para.fontSize + 'px';
-      el.style.lineHeight = para.lineHeight + 'px';
-      el.style.fontFamily = cssFamilyFor(para.font);
-      el.style.fontWeight = para.font.bold   ? '700' : '400';
-      el.style.fontStyle  = para.font.italic ? 'italic' : 'normal';
-      el.style.textAlign  = para.alignment;
+    /* --- create ONE box per line, using the parent paragraph for alignment --- */
+    for(const para of paras){
+      for(const line of para.lines){
+        const el = document.createElement('div');
+        el.className = 'para';
+        el.contentEditable = 'true';
+        el.spellcheck = false;
+        el.textContent = line.text;
 
-      const pstate = {
-        ...para, el,
-        originalText:   para.text,
-        originalTop:    para.top,
-        originalHeight: para.height,
-        currentHeight:  para.height,
-        alignment:      para.alignment,
-        changed: false,
-        isNew: false,
-      };
-      pageState.paras.push(pstate);
+        const lineWidth = line.right - line.left;
+        const buffer    = Math.max(lineWidth * 0.4, 60);
+        const boxWidth  = lineWidth + buffer;
 
-      const onInput = () => handleParaInput(pageState, pstate);
-      el.addEventListener('input', onInput);
-      el.addEventListener('focus', () => showAlignToolbar(pstate));
-      el.addEventListener('blur', () => {
-        onInput();
-        setTimeout(() => {
-          const a = document.activeElement;
-          if(a && (a === pstate.el || els.alignToolbar.contains(a))) return;
-          hideAlignToolbar();
-        }, 180);
-      });
-      el.addEventListener('keydown', e => { if(e.key === 'Escape') el.blur(); });
+        let boxLeft;
+        if(para.alignment === 'right'){
+          boxLeft = line.right - boxWidth;
+        } else if(para.alignment === 'center'){
+          const center = (line.left + line.right) / 2;
+          boxLeft = center - boxWidth / 2;
+        } else {
+          boxLeft = line.left;
+        }
 
-      wrap.appendChild(el);
+        el.style.left       = boxLeft + 'px';
+        el.style.top        = (line.baseline - line.fontSize * 1.15) + 'px';
+        el.style.width      = boxWidth + 'px';
+        el.style.minHeight  = Math.max(line.fontSize * 1.35, para.lineHeight) + 'px';
+        el.style.fontSize   = line.fontSize + 'px';
+        el.style.lineHeight = para.lineHeight + 'px';
+        el.style.fontFamily = cssFamilyFor(line.font);
+        el.style.fontWeight = line.font.bold   ? '700' : '400';
+        el.style.fontStyle  = line.font.italic ? 'italic' : 'normal';
+        el.style.textAlign  = para.alignment;
+
+        const lstate = {
+          el,
+          originalText:    line.text,
+          originalLeft:    line.left,
+          originalRight:   line.right,
+          originalBaseline: line.baseline,
+          originalWidth:   lineWidth,
+          fontSize:        line.fontSize,
+          font:            line.font,
+          paragraph:       para,
+          changed:         false,
+        };
+        line._state = lstate;
+        pageState.lines.push(lstate);
+
+        const onInput = () => handleLineInput(lstate);
+        el.addEventListener('input', onInput);
+        el.addEventListener('focus', () => showAlignToolbar(lstate));
+        el.addEventListener('blur', () => {
+          onInput();
+          setTimeout(() => {
+            const a = document.activeElement;
+            if(a && (a === lstate.el || els.alignToolbar.contains(a))) return;
+            hideAlignToolbar();
+          }, 180);
+        });
+        el.addEventListener('keydown', e => { if(e.key === 'Escape') el.blur(); });
+
+        wrap.appendChild(el);
+      }
     }
 
+    /* --- double-click on empty space: create a new empty line --- */
     wrap.addEventListener('dblclick', e => {
       if(e.target.classList && e.target.classList.contains('para')) return;
       e.preventDefault();
       const rect = wrap.getBoundingClientRect();
-      createNewParagraph(pageState, e.clientX - rect.left, e.clientY - rect.top);
+      createNewLine(pageState, e.clientX - rect.left, e.clientY - rect.top);
     });
 
+    pageState.paragraphs = paras;
     state.pages.push(pageState);
-    console.log(`[page ${p}] ${rawItems.length} items → ${lines.length} lines → ${paragraphDefs.length} paragraphs`);
+    console.log(`[page ${p}] ${rawItems.length} items → ${lines.length} lines → ${paras.length} paragraph clusters`);
   }
 
   els.exportPdf.disabled = false;
@@ -945,45 +930,27 @@ async function loadPdf(arrayBuffer, fileName){
   els.fileChip.classList.remove('hidden');
   els.fileName.textContent = fileName || 'document.pdf';
   els.docInfo.textContent = `${state.pages.length} page${state.pages.length !== 1 ? 's' : ''} loaded`;
-  toast('PDF loaded — click any paragraph to edit');
+  toast('PDF loaded — click any line to edit');
   updateStats();
 }
 
 /* ================================================================
-   8. EDITING
+   6. EDITING
 ================================================================ */
-function handleParaInput(pageState, para){
-  const text = para.el.textContent;
-  const changed = (text !== para.originalText);
-  para.changed = changed;
-  para.el.classList.toggle('changed', changed);
-
-  const newH = Math.max(para.el.offsetHeight, para.lineHeight);
-  if(Math.abs(newH - para.currentHeight) > 0.5){
-    para.currentHeight = newH;
-    relayoutPage(pageState);
-  }
+function handleLineInput(lstate){
+  const text = lstate.el.textContent;
+  const changed = (text !== lstate.originalText);
+  lstate.changed = changed;
+  lstate.el.classList.toggle('changed', changed);
   updateStats();
 }
 
-function relayoutPage(pageState){
-  const sorted = [...pageState.paras].sort((a, b) => a.originalTop - b.originalTop);
-  let shift = 0;
-  for(const para of sorted){
-    para.el.style.top = (para.originalTop + shift) + 'px';
-    const currentH = para.changed
-      ? Math.max(para.el.offsetHeight, para.lineHeight)
-      : para.originalHeight;
-    shift += currentH - para.originalHeight;
-  }
-}
-
-function createNewParagraph(pageState, x, y){
+function createNewLine(pageState, x, y){
   const defaultFont = { name:'Arial', family:'sans', bold:false, italic:false };
   const fontSize = 12, lineHeight = 15.5;
 
   let snapX = x;
-  const lefts = pageState.paras.map(p => p.left);
+  const lefts = pageState.lines.map(l => l.originalLeft);
   if(lefts.length){
     const nearest = lefts.reduce((a, b) => Math.abs(b - x) < Math.abs(a - x) ? b : a, lefts[0]);
     if(Math.abs(nearest - x) < 30) snapX = nearest;
@@ -996,32 +963,34 @@ function createNewParagraph(pageState, x, y){
   el.textContent = '';
   el.style.left       = snapX + 'px';
   el.style.top        = y + 'px';
-  el.style.width      = '60%';
+  el.style.width      = '400px';
   el.style.minHeight  = lineHeight + 'px';
   el.style.fontSize   = fontSize + 'px';
   el.style.lineHeight = lineHeight + 'px';
   el.style.fontFamily = cssFamilyFor(defaultFont);
   el.style.textAlign  = 'left';
 
-  const pstate = {
-    el, text:'',
-    originalText:'', originalLines:[],
-    left:snapX, top:y, width:0, height:lineHeight,
-    fontSize, lineHeight, font:defaultFont,
-    originalTop:y, originalHeight:lineHeight, currentHeight:lineHeight,
-    alignment:'left',
-    changed:true, isNew:true,
+  const fakePara = { alignment:'left', left:snapX, right:snapX + 400, lineHeight };
+  const lstate = {
+    el, originalText:'',
+    originalLeft:snapX, originalRight:snapX + 100,
+    originalBaseline: y + lineHeight * 0.82,
+    originalWidth: 100,
+    fontSize, font: defaultFont,
+    paragraph: fakePara,
+    changed: true,
+    isNew: true,
   };
-  pageState.paras.push(pstate);
+  pageState.lines.push(lstate);
 
-  const onInput = () => handleParaInput(pageState, pstate);
+  const onInput = () => handleLineInput(lstate);
   el.addEventListener('input', onInput);
-  el.addEventListener('focus', () => showAlignToolbar(pstate));
+  el.addEventListener('focus', () => showAlignToolbar(lstate));
   el.addEventListener('blur', () => {
     onInput();
     setTimeout(() => {
       const a = document.activeElement;
-      if(a && (a === pstate.el || els.alignToolbar.contains(a))) return;
+      if(a && (a === lstate.el || els.alignToolbar.contains(a))) return;
       hideAlignToolbar();
     }, 180);
   });
@@ -1036,19 +1005,18 @@ function createNewParagraph(pageState, x, y){
   sel.removeAllRanges();
   sel.addRange(range);
 
-  relayoutPage(pageState);
   updateStats();
 }
 
 /* ================================================================
-   9. ALIGNMENT TOOLBAR
+   7. ALIGNMENT TOOLBAR
 ================================================================ */
-function showAlignToolbar(para){
-  state.focusedPara = para;
+function showAlignToolbar(lstate){
+  state.focusedLine = lstate;
   const tb = els.alignToolbar;
   tb.style.visibility = 'hidden';
   tb.classList.add('show');
-  const rect   = para.el.getBoundingClientRect();
+  const rect   = lstate.el.getBoundingClientRect();
   const tbRect = tb.getBoundingClientRect();
   const scrollX = window.scrollX || window.pageXOffset;
   const scrollY = window.scrollY || window.pageYOffset;
@@ -1059,9 +1027,7 @@ function showAlignToolbar(para){
   if(left < scrollX + 12) left = scrollX + 12;
 
   let top = rect.top + scrollY - tbRect.height - 8;
-  if(rect.top < tbRect.height + 20){
-    top = rect.bottom + scrollY + 8;
-  }
+  if(rect.top < tbRect.height + 20) top = rect.bottom + scrollY + 8;
 
   tb.style.left = left + 'px';
   tb.style.top  = top  + 'px';
@@ -1069,93 +1035,106 @@ function showAlignToolbar(para){
 
   tb.querySelectorAll('button').forEach(b => {
     if(b.dataset.align){
-      b.classList.toggle('active', b.dataset.align === para.alignment);
+      b.classList.toggle('active', b.dataset.align === lstate.paragraph.alignment);
     }
   });
 }
 function hideAlignToolbar(){
-  state.focusedPara = null;
+  state.focusedLine = null;
   els.alignToolbar.classList.remove('show');
 }
 function repositionToolbar(){
-  if(state.focusedPara && els.alignToolbar.classList.contains('show')){
-    showAlignToolbar(state.focusedPara);
+  if(state.focusedLine && els.alignToolbar.classList.contains('show')){
+    showAlignToolbar(state.focusedLine);
   }
 }
 els.viewport.addEventListener('scroll', repositionToolbar, { passive:true });
 window.addEventListener('resize', repositionToolbar);
 window.addEventListener('scroll', repositionToolbar, { passive:true });
 
-function applyAlignment(para, align){
+function applyAlignment(lstate, align){
+  const para = lstate.paragraph;
   para.alignment = align;
-  para.el.style.textAlign = align;
-  para.changed = true;
-  para.el.classList.add('changed');
+
+  // Apply to all line boxes that share this paragraph
+  for(const ps of state.pages){
+    for(const l of ps.lines){
+      if(l.paragraph === para){
+        l.el.style.textAlign = align;
+        l.changed = l.changed || true;
+        l.el.classList.add('changed');
+        // reposition the box so the text sits at the right anchor
+        const lineWidth = l.originalWidth;
+        const buffer    = Math.max(lineWidth * 0.4, 60);
+        const boxWidth  = lineWidth + buffer;
+        let boxLeft;
+        if(align === 'right')        boxLeft = l.originalRight - boxWidth;
+        else if(align === 'center')  boxLeft = (l.originalLeft + l.originalRight)/2 - boxWidth/2;
+        else                          boxLeft = l.originalLeft;
+        l.el.style.left  = boxLeft + 'px';
+        l.el.style.width = boxWidth + 'px';
+      }
+    }
+  }
+
   els.alignToolbar.querySelectorAll('button').forEach(b =>
     b.classList.toggle('active', b.dataset.align === align));
-  if(document.activeElement !== para.el) para.el.focus();
+  if(document.activeElement !== lstate.el) lstate.el.focus();
   updateStats();
 }
 
 els.alignToolbar.addEventListener('mousedown', e => e.preventDefault());
 els.alignToolbar.addEventListener('click', e => {
   const btn = e.target.closest('button');
-  if(!btn || !state.focusedPara) return;
+  if(!btn || !state.focusedLine) return;
 
   if(btn.dataset.align){
-    applyAlignment(state.focusedPara, btn.dataset.align);
+    applyAlignment(state.focusedLine, btn.dataset.align);
     return;
   }
 
-  const action = btn.dataset.action;
-  const para = state.focusedPara;
-  const pageState = state.pages.find(ps => ps.paras.includes(para));
-  if(!pageState) return;
-
-  if(action === 'delete'){
-    if(!confirm('Delete this paragraph?')) return;
-    para.el.remove();
-    pageState.paras = pageState.paras.filter(p => p !== para);
-    relayoutPage(pageState);
+  if(btn.dataset.action === 'clear'){
+    if(!confirm('Clear this line?')) return;
+    state.focusedLine.el.textContent = '';
+    handleLineInput(state.focusedLine);
     hideAlignToolbar();
-    updateStats();
-    toast('Paragraph deleted');
+    toast('Line cleared');
   }
 });
 
 document.addEventListener('keydown', e => {
-  if(!state.focusedPara) return;
+  if(!state.focusedLine) return;
   if(!(e.ctrlKey || e.metaKey) || !e.shiftKey) return;
   const k = e.key.toLowerCase();
   const map = { l:'left', e:'center', r:'right', j:'justify' };
   if(map[k]){
     e.preventDefault();
-    applyAlignment(state.focusedPara, map[k]);
+    applyAlignment(state.focusedLine, map[k]);
   }
 });
 
 /* ================================================================
-   10. STATS
+   8. STATS
 ================================================================ */
 function updateStats(){
-  let words = 0, chars = 0, edited = 0, paras = 0;
+  let words = 0, chars = 0, edited = 0, lines = 0;
   for(const ps of state.pages){
-    paras += ps.paras.length;
-    for(const para of ps.paras){
-      const t = (para.el.textContent || '').trim();
+    lines += ps.lines.length;
+    for(const l of ps.lines){
+      const t = (l.el.textContent || '').trim();
       if(t){ words += t.split(/\s+/).length; chars += t.length; }
-      if(para.changed) edited++;
+      if(l.changed) edited++;
     }
   }
   els.statPages.textContent  = state.pages.length;
-  els.statParas.textContent  = paras;
+  els.statParas.textContent  = lines;
   els.statWords.textContent  = words;
   els.statChars.textContent  = chars;
   els.statEdited.textContent = edited;
 }
 
 /* ================================================================
-   11. FILE INPUT + DRAG & DROP
+   9. FILE INPUT + DRAG & DROP
 ================================================================ */
 els.file.addEventListener('change', async e => {
   const f = e.target.files[0];
@@ -1176,50 +1155,15 @@ els.drop.addEventListener('drop', async e => {
 });
 
 /* ================================================================
-   12. TEXT HELPERS
+   10. TEXT HELPERS
 ================================================================ */
-function wrapTextForPdf(text, font, fontSize, maxWidth){
-  const words = text.split(/\s+/).filter(Boolean);
-  const lines = [];
-  let cur = '';
-  for(const w of words){
-    const test = cur ? cur + ' ' + w : w;
-    let width;
-    try { width = font.widthOfTextAtSize(test, fontSize); }
-    catch(_) { width = test.length * fontSize * 0.55; }
-    if(width > maxWidth && cur){ lines.push(cur); cur = w; }
-    else cur = test;
-  }
-  if(cur) lines.push(cur);
-  return lines;
-}
 function measurePdf(font, text, size){
   try { return font.widthOfTextAtSize(text, size); }
   catch(_) { return text.length * size * 0.55; }
 }
-function drawJustifiedLine(op, font, text, size, xStart, targetWidth, y, rgb){
-  const words = text.split(/\s+/).filter(Boolean);
-  if(words.length < 2){
-    op.drawText(text, { x:xStart, y, size, font, color: rgb(0,0,0) });
-    return;
-  }
-  let wordsWidth = 0;
-  for(const w of words) wordsWidth += measurePdf(font, w, size);
-  const totalGap = targetWidth - wordsWidth;
-  const gapPer   = totalGap / (words.length - 1);
-
-  let x = xStart;
-  for(let i = 0; i < words.length; i++){
-    op.drawText(words[i], { x, y, size, font, color: rgb(0,0,0) });
-    x += measurePdf(font, words[i], size);
-    if(i < words.length - 1) x += gapPer;
-  }
-}
 
 /* ================================================================
-   13. BUILD PDF BYTES — THE FIX IS HERE
-   Uses the ORIGINAL baselines from the PDF for the first line and
-   line spacing so edited text sits exactly where the original was.
+   11. BUILD PDF BYTES — line-per-line, alignment preserved
 ================================================================ */
 async function buildPdfBytes(){
   const { PDFDocument, StandardFonts, rgb } = PDFLib;
@@ -1253,82 +1197,53 @@ async function buildPdfBytes(){
     const sx = pw / ps.pdfWidth;
     const sy = ph / ps.pdfHeight;
 
-    for(const para of ps.paras){
-      if(!para.changed || para.isNew) continue;
+    for(const l of ps.lines){
+      if(!l.changed || l.isNew) continue;
 
-      /* PASS A — white-out the original footprint line by line */
-      for(const ln of para.originalLines){
-        const vpTop    = ln.baseline - ln.fontSize * 1.05;
-        const vpBottom = ln.baseline + ln.fontSize * 0.35;
+      /* --- white-out the original line footprint --- */
+      if(!l.isNew){
+        const vpTop    = l.originalBaseline - l.fontSize * 1.10;
+        const vpBottom = l.originalBaseline + l.fontSize * 0.35;
         const pdfY     = ph - vpBottom * sy;
         const rectH    = (vpBottom - vpTop) * sy;
-        if(rectH <= 0) continue;
-        op.drawRectangle({
-          x: ln.x * sx - 1, y: pdfY,
-          width: ln.width * sx + 2, height: rectH,
-          color: rgb(1,1,1),
-        });
+        if(rectH > 0){
+          op.drawRectangle({
+            x: l.originalLeft * sx - 2,
+            y: pdfY,
+            width: l.originalWidth * sx + 4,
+            height: rectH,
+            color: rgb(1,1,1),
+          });
+        }
       }
 
-      const text = (para.el.textContent || '').replace(/\s+/g, ' ').trim();
+      const text = (l.el.textContent || '').replace(/\s+/g, ' ').trim();
       if(!text) continue;
 
-      const elTopVp   = parseFloat(para.el.style.top);
-      const elLeftVp  = parseFloat(para.el.style.left);
-      const elWidthVp = para.el.offsetWidth;
+      const font   = pickFont(l.font);
+      const fontPt = l.fontSize * sy;
+      const baselinePdfY = ph - l.originalBaseline * sy;
+      const textWidth = measurePdf(font, text, fontPt);
 
-      const paraLeftPt  = elLeftVp * sx;
-      const paraWidthPt = elWidthVp * sx;
+      const align = (l.paragraph && l.paragraph.alignment) || 'left';
 
-      /* --- exact first baseline: original baseline + vertical shift --- */
-      const topShift = elTopVp - para.originalTop;
-      let firstBaselineVp;
-      if(para.originalLines && para.originalLines.length > 0){
-        firstBaselineVp = para.originalLines[0].baseline + topShift;
+      let x;
+      if(align === 'right'){
+        x = (l.originalRight * sx) - textWidth;
+      } else if(align === 'center'){
+        const centerPdf = ((l.originalLeft + l.originalRight) / 2) * sx;
+        x = centerPdf - textWidth / 2;
       } else {
-        const halfLead = (para.lineHeight - para.fontSize) / 2;
-        firstBaselineVp = elTopVp + halfLead + para.fontSize * 0.82;
-      }
-      const firstBaselinePdf = ph - firstBaselineVp * sy;
-
-      /* --- exact line spacing: original baseline-to-baseline distance --- */
-      let lineHeightPt;
-      if(para.originalLines && para.originalLines.length > 1){
-        let total = 0;
-        for(let k = 1; k < para.originalLines.length; k++){
-          total += para.originalLines[k].baseline - para.originalLines[k-1].baseline;
-        }
-        lineHeightPt = (total / (para.originalLines.length - 1)) * sy;
-      } else {
-        lineHeightPt = para.lineHeight * sy;
+        x = l.originalLeft * sx;
       }
 
-      const font   = pickFont(para.font);
-      const fontPt = para.fontSize * sy;
-      const align  = para.alignment || 'left';
-
-      const wrapped = wrapTextForPdf(text, font, fontPt, paraWidthPt);
-
-      for(let j = 0; j < wrapped.length; j++){
-        const lineText  = wrapped[j];
-        const lineWidth = measurePdf(font, lineText, fontPt);
-        const isLast    = (j === wrapped.length - 1);
-
-        let x = paraLeftPt;
-        if(align === 'right')       x = paraLeftPt + paraWidthPt - lineWidth;
-        else if(align === 'center') x = paraLeftPt + (paraWidthPt - lineWidth) / 2;
-
-        const y = firstBaselinePdf - j * lineHeightPt;
-
-        try{
-          if(align === 'justify' && !isLast && wrapped.length > 1){
-            drawJustifiedLine(op, font, lineText, fontPt, paraLeftPt, paraWidthPt, y, rgb);
-          } else {
-            op.drawText(lineText, { x, y, size: fontPt, font, color: rgb(0,0,0) });
-          }
-        }catch(e){
-          console.warn('drawText failed:', lineText, e);
-        }
+      try{
+        op.drawText(text, {
+          x, y: baselinePdfY,
+          size: fontPt, font, color: rgb(0,0,0),
+        });
+      }catch(e){
+        console.warn('drawText failed:', text, e);
       }
     }
   }
@@ -1336,7 +1251,7 @@ async function buildPdfBytes(){
 }
 
 /* ================================================================
-   14. PREVIEW MODAL
+   12. PREVIEW MODAL
 ================================================================ */
 let currentPreviewBlob = null;
 function showPreview(blob){
@@ -1366,7 +1281,7 @@ els.previewDownload.addEventListener('click', () => {
 });
 
 /* ================================================================
-   15. SAVE AS PDF
+   13. SAVE AS PDF
 ================================================================ */
 els.exportPdf.addEventListener('click', async () => {
   if(!state.pdfDoc) return;
@@ -1385,7 +1300,7 @@ els.exportPdf.addEventListener('click', async () => {
 });
 
 /* ================================================================
-   16. SAVE AS DOCX
+   14. SAVE AS DOCX — paragraph clusters become Word paragraphs
 ================================================================ */
 els.exportDocx.addEventListener('click', async () => {
   if(!state.pdfDoc) return;
@@ -1412,16 +1327,19 @@ els.exportDocx.addEventListener('click', async () => {
         spacing: { after: 200 },
       }));
 
-      const sorted = [...ps.paras].sort((a, b) =>
-        parseFloat(a.el.style.top) - parseFloat(b.el.style.top));
+      // Sort paragraph clusters by top, and build one DOCX paragraph per cluster
+      const clusters = [...ps.paragraphs].sort((a, b) => a.top - b.top);
+      for(const para of clusters){
+        const lineTexts = para.lines.map(line => {
+          const lstate = line._state;
+          return (lstate && lstate.el.textContent || line.text || '').trim();
+        }).filter(Boolean);
+        if(!lineTexts.length) continue;
 
-      for(const para of sorted){
-        const text = (para.el.textContent || '').trim();
-        if(!text) continue;
         children.push(new Paragraph({
           alignment: alignMap[para.alignment || 'left'],
           children: [ new TextRun({
-            text,
+            text: lineTexts.join(' '),
             font: para.font.name,
             bold: para.font.bold,
             italics: para.font.italic,
@@ -1445,7 +1363,7 @@ els.exportDocx.addEventListener('click', async () => {
 });
 
 /* ================================================================
-   17. BOOT
+   15. BOOT
 ================================================================ */
 (async () => { state.fonts = await loadMetricFonts(); })();
 </script>
