@@ -1,5 +1,5 @@
 /* ================================================================
-   FreePDF Editor — Word-like paragraph reflow
+   FreePDF Editor — line/paragraph editing with embedded-font matching
    ================================================================ */
 pdfjsLib.GlobalWorkerOptions.workerSrc =
   "https://cdnjs.cloudflare.com/ajax/libs/pdf.js/3.11.174/pdf.worker.min.js";
@@ -32,8 +32,17 @@ const els = {
   fontSelect:   document.getElementById('fontSelect'),
 };
 
-const state = { pdfBytes:null, pdfDoc:null, pages:[], fonts:{}, focusedPara:null };
+const state = {
+  pdfBytes: null,
+  pdfDoc: null,
+  pdfLibDoc: null,
+  pages: [],
+  fonts: {},           // metric-compatible fonts (Arimo/Tinos/Cousine)
+  pdfEmbeddedFonts: {},// PDF-embedded fonts registered as web fonts: baseName -> {family, bytes, format}
+  focusedPara: null,
+};
 
+/* ---------- Utilities ---------- */
 function toast(msg, ms = 2500){
   els.status.textContent = msg;
   els.status.classList.add('show');
@@ -50,6 +59,8 @@ function downloadBlob(blob, filename){
 }
 
 document.getElementById('year').textContent = new Date().getFullYear();
+
+/* ---------- Theme ---------- */
 function applyTheme(t){
   document.documentElement.setAttribute('data-theme', t);
   try{ localStorage.setItem('pdfedit-theme', t); }catch(_){}
@@ -68,18 +79,19 @@ document.getElementById('showOutlines').addEventListener('change', e => {
   document.body.classList.toggle('show-outlines', e.target.checked);
 });
 
-/* -------- Font families -------- */
+/* ---------- Font choices for the picker ---------- */
 const FONT_CHOICES = {
-  auto:    null,
-  sans:    'Arial, Helvetica, sans-serif',
-  serif:   '"Times New Roman", Times, serif',
-  mono:    '"Courier New", Courier, monospace',
-  georgia: 'Georgia, "Times New Roman", serif',
-  times:   '"Times New Roman", Times, serif',
-  helvetica:'Helvetica, Arial, sans-serif',
+  auto:      null,
+  embedded:  '__EMBEDDED__',    // use the PDF's own embedded font
+  sans:      'Arial, Helvetica, sans-serif',
+  serif:     '"Times New Roman", Times, serif',
+  mono:      '"Courier New", Courier, monospace',
+  georgia:   'Georgia, "Times New Roman", serif',
 };
 
-/* -------- Metric fonts -------- */
+/* ================================================================
+   1. METRIC-COMPATIBLE FALLBACK FONTS (Arimo/Tinos/Cousine)
+   ================================================================ */
 async function tryFetchFont(url){
   try{ const r = await fetch(url, { mode:'cors' }); if(!r.ok) return null;
        return await r.arrayBuffer(); }catch(_){ return null; }
@@ -103,10 +115,138 @@ async function loadMetricFonts(){
   return out;
 }
 
-/* -------- Fonts -------- */
+/* ================================================================
+   2. EXTRACT EMBEDDED FONTS FROM THE PDF AND REGISTER AS WEB FONTS
+   This is the key improvement — the editor gets the *actual* PDF font.
+   ================================================================ */
+function sanitizeFontFamilyName(s){
+  return 'PdfEmbed_' + String(s).replace(/[^a-zA-Z0-9]/g, '_').slice(0, 40) +
+         '_' + Math.random().toString(36).slice(2, 7);
+}
+
+function looksLikeTrueType(bytes){
+  if(!bytes || bytes.length < 4) return false;
+  const b0 = bytes[0], b1 = bytes[1], b2 = bytes[2], b3 = bytes[3];
+  // 00 01 00 00 (TrueType), 'true', 'ttcf', 'OTTO'
+  if(b0 === 0x00 && b1 === 0x01 && b2 === 0x00 && b3 === 0x00) return true;
+  if(b0 === 0x74 && b1 === 0x72 && b2 === 0x75 && b3 === 0x65) return true;    // "true"
+  if(b0 === 0x74 && b1 === 0x74 && b2 === 0x63 && b3 === 0x66) return true;    // "ttcf"
+  if(b0 === 0x4F && b1 === 0x54 && b2 === 0x54 && b3 === 0x4F) return true;    // "OTTO"
+  return false;
+}
+
+async function extractAndRegisterPdfFonts(pdfLibDoc){
+  const { PDFName, PDFDict, PDFRawStream, PDFArray } = PDFLib;
+  const ctx = pdfLibDoc.context;
+  const registry = new Map();     // baseName (raw) -> { family, bytes, format }
+  const tried = new Set();
+
+  const pages = pdfLibDoc.getPages();
+
+  for(const page of pages){
+    let res;
+    try{ res = page.node.Resources(); }catch(_){ res = null; }
+    if(!res) continue;
+    const fontDict = res.lookup(PDFName.of('Font'), PDFDict);
+    if(!fontDict) continue;
+
+    for(const [key, ref] of fontDict.entries()){
+      try{
+        const font = ctx.lookup(ref, PDFDict);
+        if(!font) continue;
+
+        const baseFontRef = font.get(PDFName.of('BaseFont'));
+        const baseFont = baseFontRef
+          ? baseFontRef.toString().replace(/^\//, '')
+          : key.toString().replace(/^\//, '');
+        if(tried.has(baseFont)) continue;
+        tried.add(baseFont);
+
+        /* Find FontDescriptor */
+        let descriptorRef = font.get(PDFName.of('FontDescriptor'));
+        if(!descriptorRef){
+          const descendants = font.get(PDFName.of('DescendantFonts'));
+          if(descendants){
+            const arr = ctx.lookup(descendants, PDFArray);
+            const first = arr && arr.get(0);
+            const df = ctx.lookup(first, PDFDict);
+            if(df) descriptorRef = df.get(PDFName.of('FontDescriptor'));
+          }
+        }
+        if(!descriptorRef) continue;
+        const desc = ctx.lookup(descriptorRef, PDFDict);
+        if(!desc) continue;
+
+        /* Look for an embedded font file */
+        const f1 = desc.get(PDFName.of('FontFile'));     // Type1
+        const f2 = desc.get(PDFName.of('FontFile2'));    // TrueType
+        const f3 = desc.get(PDFName.of('FontFile3'));    // CFF/OpenType
+
+        const fileRef = f2 || f3 || f1;
+        if(!fileRef) continue;
+
+        const stream = ctx.lookup(fileRef, PDFRawStream);
+        if(!stream) continue;
+
+        const bytes = stream.getContents();
+        if(!bytes || !bytes.length) continue;
+
+        const fmt = f2 ? 'ttf' : f3 ? 'cff/otf' : 'type1';
+
+        /* Only TrueType/OpenType fonts can be registered directly in browsers */
+        if((fmt === 'ttf' || fmt === 'cff/otf') && looksLikeTrueType(bytes)){
+          const family = sanitizeFontFamilyName(baseFont);
+          try{
+            const blob = new Blob([bytes], { type: 'font/ttf' });
+            const url = URL.createObjectURL(blob);
+            const face = new FontFace(family, `url(${url})`);
+            await face.load();
+            document.fonts.add(face);
+            URL.revokeObjectURL(url);
+            registry.set(baseFont, { family, bytes, format: fmt });
+            console.log(`✓ Embedded font registered: "${baseFont}" → ${family} (${bytes.length} bytes)`);
+          }catch(e){
+            console.warn('FontFace load failed for', baseFont, e);
+          }
+        } else {
+          console.log(`· Embedded font "${baseFont}" is ${fmt} — skipped (not directly usable in browser)`);
+        }
+      }catch(e){
+        console.warn('Font extraction error:', e);
+      }
+    }
+  }
+
+  console.log(`[fonts] registered ${registry.size} embedded PDF fonts`);
+  return registry;
+}
+
+/* Try to find a registered web font by a fuzzy match of the raw name */
+function findEmbeddedFamily(rawBaseFont){
+  if(!rawBaseFont) return null;
+  const raw = String(rawBaseFont).replace(/^[A-Z]{6}\+/, '');
+  // exact
+  for(const [k, v] of Object.entries(state.pdfEmbeddedFonts)){
+    const kClean = k.replace(/^[A-Z]{6}\+/, '');
+    if(kClean === raw) return v.family;
+  }
+  // fuzzy — base family match
+  const rawLower = raw.toLowerCase().replace(/[-_,]/g, '');
+  for(const [k, v] of Object.entries(state.pdfEmbeddedFonts)){
+    const kLower = k.toLowerCase().replace(/^[a-z]{6}\+/, '').replace(/[-_,]/g, '');
+    if(kLower === rawLower) return v.family;
+    if(kLower.includes(rawLower) || rawLower.includes(kLower)) return v.family;
+  }
+  return null;
+}
+
+/* ================================================================
+   3. FONT NAME CLEANING (for reporting / fallback)
+   ================================================================ */
 function cleanFontName(raw){
-  if(!raw) return { name:'Arial', family:'sans', bold:false, italic:false };
-  let n = String(raw).replace(/^[A-Z]{6}\+/, '');
+  if(!raw) return { name:'Arial', family:'sans', bold:false, italic:false, raw: '' };
+  const rawClean = String(raw).replace(/^[A-Z]{6}\+/, '');
+  let n = rawClean;
   const map = {
     'ArialMT':'Arial','Arial-BoldMT':'Arial','Arial-ItalicMT':'Arial','Arial-BoldItalicMT':'Arial','Arial':'Arial',
     'Helvetica':'Helvetica','Helvetica-Bold':'Helvetica',
@@ -127,7 +267,7 @@ function cleanFontName(raw){
   let family = 'sans';
   if(/times|georgia|garamond|cambria|serif|book/i.test(n)) family = 'serif';
   if(/courier|mono|consol|typewriter/i.test(n)) family = 'mono';
-  return { name:n, family, bold, italic };
+  return { name:n, family, bold, italic, raw: rawClean };
 }
 function metricKeyFor(f){
   if(f.family === 'serif') return f.bold ? 'serif-bold' : 'serif-regular';
@@ -135,12 +275,20 @@ function metricKeyFor(f){
   return f.bold ? 'sans-bold' : 'sans-regular';
 }
 function cssFamilyFor(f){
+  // If we have the PDF's own font registered, prefer it
+  const embedded = findEmbeddedFamily(f.raw);
+  if(embedded) return `"${embedded}", ${genericFallback(f)}`;
+  return genericFallback(f);
+}
+function genericFallback(f){
   if(f.family === 'serif') return 'Georgia, "Times New Roman", Times, serif';
   if(f.family === 'mono')  return '"Courier New", Courier, monospace';
   return 'Arial, Helvetica, sans-serif';
 }
 
-/* -------- Group text items into lines -------- */
+/* ================================================================
+   4. GROUP TEXT ITEMS INTO LINES
+   ================================================================ */
 function groupItemsIntoLines(items){
   const lines = [];
   const sorted = [...items].sort((a,b) => a.top - b.top);
@@ -169,6 +317,7 @@ function groupItemsIntoLines(items){
     ln.fontSize = ln.items.reduce((s,it) => s + it.fontSize, 0) / ln.items.length;
     ln.baseline = Math.max(...ln.items.map(it => it.baseline));
     ln.font = ln.items[0].font;
+    ln.rawFontName = ln.items[0].rawFontName || ln.font.raw;
   }
   lines.sort((a,b) => a.top - b.top);
   return lines;
@@ -187,31 +336,45 @@ function joinItemsText(items){
   return s;
 }
 
-/* -------- Cluster lines into paragraphs -------- */
+/* ================================================================
+   5. CLUSTER LINES INTO PARAGRAPHS (median-based — more robust)
+   ================================================================ */
 function clusterLines(lines){
   if(!lines.length) return [];
+
   const gaps = [];
   for(let i = 1; i < lines.length; i++){
     const g = lines[i].baseline - lines[i-1].baseline;
     if(g > 0) gaps.push(g);
   }
-  if(!gaps.length) return [{ lines, fontSize: lines[0].fontSize, alignment: 'left' }];
-  const minGap = Math.min(...gaps);
-  const breakGap = minGap * 1.30;
+  if(!gaps.length){
+    return [{ lines, fontSize: lines[0].fontSize, lineHeight: lines[0].fontSize * 1.25,
+              alignment: 'left' }];
+  }
+
+  // Median gap = the "normal" single-line leading
+  const sortedGaps = [...gaps].sort((a,b) => a - b);
+  const medianGap  = sortedGaps[Math.floor(sortedGaps.length / 2)];
+  // A paragraph break: gap > 1.35× the median (tuned for typical PDFs)
+  const breakGap   = medianGap * 1.35;
 
   const clusters = [];
   let cur = [lines[0]];
+
   for(let i = 1; i < lines.length; i++){
-    const prev = lines[i-1], line = lines[i];
+    const prev = lines[i-1];
+    const line = lines[i];
     const gap = line.baseline - prev.baseline;
     const sizeRatio = line.fontSize / Math.max(prev.fontSize, 0.1);
     const leftDiff = Math.abs(line.left - cur[0].left);
-    const gapTooBig   = gap > breakGap;
-    const sizeChanged = sizeRatio > 1.20 || sizeRatio < 0.83;
-    const indentJump  = leftDiff > prev.fontSize * 0.7 && line.left > prev.left;
-    const endsSentence = /[.!?:]["')\]]?\s*$/.test(prev.text.trim());
-    const startsUpper  = /^[A-Z"'(]/.test(line.text.trim());
-    const sentenceBreak = endsSentence && startsUpper && gap > minGap * 1.10 && leftDiff < prev.fontSize * 0.5;
+
+    // Break signals
+    const gapTooBig     = gap > breakGap;
+    const sizeChanged   = sizeRatio > 1.15 || sizeRatio < 0.87;
+    const indentJump    = leftDiff > prev.fontSize * 0.8 && line.left > prev.left;
+    const endsSentence  = /[.!?:]["')\]]?\s*$/.test(prev.text.trim());
+    const startsUpper   = /^[A-Z"'(]/.test(line.text.trim());
+    const sentenceBreak = endsSentence && startsUpper && gap > medianGap * 1.12;
 
     if(gapTooBig || sizeChanged || indentJump || sentenceBreak){
       clusters.push(cur); cur = [line];
@@ -221,14 +384,10 @@ function clusterLines(lines){
 
   return clusters.map(c => {
     const fontSize = c.reduce((s,l) => s + l.fontSize, 0) / c.length;
-    return {
-      lines: c,
-      fontSize,
-      lineHeight: c.length > 1
-        ? (c[c.length-1].baseline - c[0].baseline) / (c.length - 1)
-        : fontSize * 1.25,
-      alignment: detectAlignment(c, fontSize),
-    };
+    const lineHeight = c.length > 1
+      ? (c[c.length-1].baseline - c[0].baseline) / (c.length - 1)
+      : fontSize * 1.25;
+    return { lines: c, fontSize, lineHeight, alignment: detectAlignment(c, fontSize) };
   });
 }
 
@@ -254,11 +413,32 @@ function detectAlignment(lines, fontSize){
 }
 
 /* ================================================================
-   LOAD PDF
+   6. LOAD PDF
    ================================================================ */
 async function loadPdf(arrayBuffer, fileName){
   state.pdfBytes = new Uint8Array(arrayBuffer);
+
+  // parse with pdf.js
   state.pdfDoc = await pdfjsLib.getDocument({ data: state.pdfBytes.slice() }).promise;
+
+  // parse with pdf-lib for font extraction
+  try{
+    state.pdfLibDoc = await PDFLib.PDFDocument.load(state.pdfBytes.slice(), {
+      ignoreEncryption: true, updateMetadata: false,
+    });
+    els.statFonts.textContent = 'extracting…';
+    state.pdfEmbeddedFonts = Object.fromEntries(
+      await extractAndRegisterPdfFonts(state.pdfLibDoc)
+    );
+    const registered = Object.keys(state.pdfEmbeddedFonts).length;
+    els.statFonts.textContent = registered
+      ? `${registered} embedded + 6 fallback`
+      : '6 fallback';
+  }catch(e){
+    console.warn('pdf-lib / font extraction failed:', e);
+    state.pdfLibDoc = null;
+    state.pdfEmbeddedFonts = {};
+  }
 
   els.pages.innerHTML = '';
   state.pages = [];
@@ -306,7 +486,7 @@ async function loadPdf(arrayBuffer, fileName){
       rawItems.push({
         str: it.str, left, right, baseline,
         top: baseline - fontSize, bottom: baseline + fontSize * 0.25,
-        fontSize, font,
+        fontSize, font, rawFontName: rawFont,
       });
     }
 
@@ -322,6 +502,7 @@ async function loadPdf(arrayBuffer, fileName){
       const lineHeight = cluster.lineHeight;
       const alignment = cluster.alignment;
       const font = cLines[0].font;
+      const rawFontName = cLines[0].rawFontName || font.raw;
       const width = right - left;
 
       let text = '';
@@ -338,7 +519,7 @@ async function loadPdf(arrayBuffer, fileName){
       el.spellcheck = false;
       el.textContent = text;
 
-      const boxWidth = width + fontSize * 0.5;
+      const boxWidth = width + fontSize * 0.6;
       let boxLeft = left;
       if(alignment === 'right')       boxLeft = right - boxWidth;
       else if(alignment === 'center') boxLeft = ((left + right) / 2) - boxWidth / 2;
@@ -365,6 +546,7 @@ async function loadPdf(arrayBuffer, fileName){
         fontSize,
         lineHeight,
         font,
+        rawFontName,
         alignment,
         originalLines: cLines.map(l => ({
           x: l.left, baseline: l.baseline,
@@ -419,14 +601,13 @@ async function loadPdf(arrayBuffer, fileName){
 }
 
 /* ================================================================
-   EDITING + REFLOW
+   7. EDITING + REFLOW
    ================================================================ */
 function handleParaInput(pageState, pstate){
   const text = pstate.el.textContent;
   const changed = (text !== pstate.originalText);
   pstate.changed = changed;
   pstate.el.classList.toggle('changed', changed);
-
   const newH = pstate.el.offsetHeight;
   if(Math.abs(newH - pstate.currentHeight) > 0.5){
     pstate.currentHeight = newH;
@@ -447,16 +628,14 @@ function relayoutPage(pageState){
 }
 
 function createNewParagraph(pageState, x, y){
-  const defaultFont = { name:'Arial', family:'sans', bold:false, italic:false };
+  const defaultFont = { name:'Arial', family:'sans', bold:false, italic:false, raw:'Arial' };
   const fontSize = 12, lineHeight = fontSize * 1.3;
-
   let snapX = x;
   const lefts = pageState.paras.map(p => p.left);
   if(lefts.length){
     const nearest = lefts.reduce((a,b) => Math.abs(b-x) < Math.abs(a-x) ? b : a, lefts[0]);
     if(Math.abs(nearest - x) < 30) snapX = nearest;
   }
-
   const el = document.createElement('div');
   el.className = 'para changed';
   el.contentEditable = 'true';
@@ -483,6 +662,7 @@ function createNewParagraph(pageState, x, y){
     fontSize,
     lineHeight,
     font: defaultFont,
+    rawFontName: 'Arial',
     alignment: 'left',
     originalLines: [],
     changed: true,
@@ -511,7 +691,7 @@ function createNewParagraph(pageState, x, y){
 }
 
 /* ================================================================
-   TOOLBAR
+   8. TOOLBAR
    ================================================================ */
 function showAlignToolbar(pstate){
   state.focusedPara = pstate;
@@ -529,15 +709,13 @@ function showAlignToolbar(pstate){
   tb.style.left = left + 'px';
   tb.style.top = top + 'px';
   tb.style.visibility = '';
-  tb.querySelectorAll('button[data-align]').forEach(b => {
-    b.classList.toggle('active', b.dataset.align === pstate.alignment);
-  });
-  // Sync the font dropdown with the current state
-  if(pstate.fontOverride){
-    els.fontSelect.value = pstate.fontOverride;
-  } else {
-    els.fontSelect.value = 'auto';
-  }
+  tb.querySelectorAll('button[data-align]').forEach(b =>
+    b.classList.toggle('active', b.dataset.align === pstate.alignment));
+
+  // Font dropdown: default to "embedded" if we have the exact PDF font
+  if(pstate.fontOverride) els.fontSelect.value = pstate.fontOverride;
+  else if(findEmbeddedFamily(pstate.rawFontName)) els.fontSelect.value = 'embedded';
+  else els.fontSelect.value = 'auto';
 }
 function hideAlignToolbar(){
   state.focusedPara = null;
@@ -555,14 +733,6 @@ function applyAlignment(pstate, align){
   pstate.el.style.textAlign = align;
   pstate.changed = true;
   pstate.el.classList.add('changed');
-  const currentLeft = parseFloat(pstate.el.style.left);
-  const width = pstate.el.offsetWidth;
-  const currentRight = currentLeft + width;
-  let boxLeft = currentLeft;
-  if(align === 'right')       boxLeft = currentRight - width;
-  else if(align === 'center') boxLeft = ((currentLeft + currentRight) / 2) - width / 2;
-  else                         boxLeft = currentLeft;
-  pstate.el.style.left = boxLeft + 'px';
   els.alignToolbar.querySelectorAll('button[data-align]').forEach(b =>
     b.classList.toggle('active', b.dataset.align === align));
   if(document.activeElement !== pstate.el) pstate.el.focus();
@@ -588,22 +758,25 @@ els.alignToolbar.addEventListener('click', e => {
   }
 });
 
-/* Font picker change */
+/* Font picker */
 els.fontSelect.addEventListener('change', e => {
   if(!state.focusedPara) return;
   const key = e.target.value;
   const p = state.focusedPara;
   p.fontOverride = key === 'auto' ? null : key;
-  if(key === 'auto'){
+
+  if(key === 'embedded'){
+    const embedded = findEmbeddedFamily(p.rawFontName);
+    if(embedded) p.el.style.fontFamily = `"${embedded}", ${genericFallback(p.font)}`;
+    else p.el.style.fontFamily = cssFamilyFor(p.font);
+  } else if(key === 'auto'){
     p.el.style.fontFamily = cssFamilyFor(p.font);
   } else {
     p.el.style.fontFamily = FONT_CHOICES[key] || cssFamilyFor(p.font);
   }
-  // Force a small reflow to update height
-  handleParaInput(
-    state.pages.find(ps => ps.paras.includes(p)),
-    p
-  );
+
+  const pageState = state.pages.find(ps => ps.paras.includes(p));
+  if(pageState) handleParaInput(pageState, p);
   if(document.activeElement !== p.el) p.el.focus();
 });
 
@@ -616,7 +789,7 @@ document.addEventListener('keydown', e => {
 });
 
 /* ================================================================
-   STATS
+   9. STATS
    ================================================================ */
 function updateStats(){
   let words = 0, chars = 0, edited = 0, paras = 0;
@@ -636,7 +809,7 @@ function updateStats(){
 }
 
 /* ================================================================
-   FILE INPUT + DnD
+   10. FILE INPUT + DnD
    ================================================================ */
 els.file.addEventListener('change', async e => {
   const f = e.target.files[0];
@@ -655,7 +828,7 @@ els.drop.addEventListener('drop', async e => {
 });
 
 /* ================================================================
-   PDF HELPERS
+   11. PDF TEXT HELPERS
    ================================================================ */
 function wrapTextForPdf(text, font, fontSize, maxWidth){
   const words = text.split(/\s+/).filter(Boolean);
@@ -691,11 +864,12 @@ function drawJustifiedLine(op, font, text, size, xStart, targetWidth, y, rgb){
 }
 
 /* ================================================================
-   BUILD PDF
+   12. BUILD PDF — use embedded PDF fonts when possible, fall back
+       to metric-compatible Arimo/Tinos/Cousine otherwise.
    ================================================================ */
 async function buildPdfBytes(){
   const { PDFDocument, StandardFonts, rgb } = PDFLib;
-  const outDoc = await PDFDocument.load(state.pdfBytes);
+  const outDoc = await PDFDocument.load(state.pdfBytes, { ignoreEncryption: true, updateMetadata: false });
   outDoc.registerFontkit(window.fontkit);
 
   const fallback = {
@@ -711,22 +885,48 @@ async function buildPdfBytes(){
     try{ embedded[k] = await outDoc.embedFont(bytes, { subset:true }); }
     catch(e){ console.warn('embed failed:', k, e); }
   }
-  const pickFont = (p) => {
-    // If user overrode to a specific family, force the metric-equivalent
-    if(p.fontOverride === 'serif' || p.fontOverride === 'times' || p.fontOverride === 'georgia'){
-      const key = 'serif' + (p.font.bold ? '-bold' : '-regular');
-      return embedded[key] || fallback[key];
+
+  // Embed the PDF's own fonts (only once each) for exact match on export
+  const pdfEmbeddedCache = {};   // rawFontName -> embedded pdf-lib font
+  async function getPdfEmbeddedFont(rawFontName, bold, italic){
+    const found = state.pdfEmbeddedFonts[rawFontName] ||
+                  Object.entries(state.pdfEmbeddedFonts)
+                    .map(([k,v]) => [k.replace(/^[A-Z]{6}\+/, ''), v])
+                    .find(([k]) => k === String(rawFontName).replace(/^[A-Z]{6}\+/, ''));
+    if(!found) return null;
+    const [key, info] = Array.isArray(found) ? found : [rawFontName, found];
+    if(!info) return null;
+    if(pdfEmbeddedCache[key]) return pdfEmbeddedCache[key];
+    try{
+      const f = await outDoc.embedFont(info.bytes, { subset: true });
+      pdfEmbeddedCache[key] = f;
+      return f;
+    }catch(e){
+      console.warn('embed pdf font failed:', key, e);
+      return null;
     }
-    if(p.fontOverride === 'mono'){
-      const key = 'mono' + (p.font.bold ? '-bold' : '-regular');
-      return embedded[key] || fallback[key];
+  }
+
+  async function pickFont(para){
+    const raw = para.rawFontName || (para.font && para.font.raw);
+    // If user forced a family, honor that
+    if(para.fontOverride === 'sans' || para.fontOverride === 'helvetica'){
+      return embedded['sans-' + (para.font.bold ? 'bold' : 'regular')] ||
+             fallback['sans-' + (para.font.bold ? 'bold' : 'regular')];
     }
-    if(p.fontOverride === 'sans' || p.fontOverride === 'helvetica'){
-      const key = 'sans' + (p.font.bold ? '-bold' : '-regular');
-      return embedded[key] || fallback[key];
+    if(para.fontOverride === 'serif' || para.fontOverride === 'times' || para.fontOverride === 'georgia'){
+      return embedded['serif-' + (para.font.bold ? 'bold' : 'regular')] ||
+             fallback['serif-' + (para.font.bold ? 'bold' : 'regular')];
     }
-    return embedded[metricKeyFor(p.font)] || fallback[metricKeyFor(p.font)];
-  };
+    if(para.fontOverride === 'mono'){
+      return embedded['mono-' + (para.font.bold ? 'bold' : 'regular')] ||
+             fallback['mono-' + (para.font.bold ? 'bold' : 'regular')];
+    }
+    // Auto / embedded → prefer the PDF's own font
+    const pdfFont = await getPdfEmbeddedFont(raw, para.font.bold, para.font.italic);
+    if(pdfFont) return pdfFont;
+    return embedded[metricKeyFor(para.font)] || fallback[metricKeyFor(para.font)];
+  }
 
   const outPages = outDoc.getPages();
 
@@ -740,6 +940,7 @@ async function buildPdfBytes(){
     for(const para of ps.paras){
       if(!para.changed && !para.isNew) continue;
 
+      /* white-out original lines */
       if(!para.isNew){
         for(const ln of para.originalLines){
           const vpTop    = ln.baseline - ln.fontSize * 1.10;
@@ -781,7 +982,7 @@ async function buildPdfBytes(){
         lineHeightPt = para.lineHeight * sy;
       }
 
-      const font = pickFont(para);
+      const font = await pickFont(para);
       const fontPt = para.fontSize * sy;
       const align = para.alignment || 'left';
 
@@ -814,7 +1015,7 @@ async function buildPdfBytes(){
 }
 
 /* ================================================================
-   PREVIEW + DOWNLOAD
+   13. PREVIEW + DOWNLOAD
    ================================================================ */
 let currentPreviewBlob = null;
 function showPreview(blob){
@@ -857,7 +1058,7 @@ els.exportPdf.addEventListener('click', async () => {
 });
 
 /* ================================================================
-   SAVE AS DOCX
+   14. SAVE AS DOCX
    ================================================================ */
 els.exportDocx.addEventListener('click', async () => {
   if(!state.pdfDoc) return;
@@ -907,6 +1108,6 @@ els.exportDocx.addEventListener('click', async () => {
 });
 
 /* ================================================================
-   BOOT
+   15. BOOT
    ================================================================ */
 (async () => { state.fonts = await loadMetricFonts(); })();
