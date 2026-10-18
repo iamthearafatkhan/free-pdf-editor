@@ -393,7 +393,7 @@ async function loadPdf(arrayBuffer, fileName) {
 
   els.exportPdf.disabled = false;
   els.exportDocx.disabled = false;
-  els.renumberBtn.disabled = false; // Enabled here
+  els.renumberBtn.disabled = false;
   els.drop.style.display = 'none';
   els.fileChip.classList.remove('hidden');
   els.fileName.textContent = fileName || 'document.pdf';
@@ -707,13 +707,12 @@ function escapeHtml(s) {
 }
 
 /* ================================================================
-   10. FIX PAGE NUMBERS (UPDATED & MORE ROBUST)
+   10. FIX PAGE NUMBERS (STRICTLY CHECKED)
    ================================================================ */
 function renumberPages() {
   if (!state.pdfDoc) { toast('Open a PDF first'); return; }
   if (!state.pages || !state.pages.length) return;
 
-  // Blur any active editing line so the DOM updates correctly
   if (document.activeElement) document.activeElement.blur();
 
   const pageCount = state.pages.length;
@@ -727,34 +726,47 @@ function renumberPages() {
       const text = (line.el.textContent || '').trim();
       if (!text) continue;
 
+      // Only check header (top 15%) or footer (bottom 15%)
+      const isHeader = line.originalBaseline < ps.pdfHeight * 0.15;
+      const isFooter = line.originalBaseline > ps.pdfHeight * 0.85;
+      if (!isHeader && !isFooter) continue;
+
+      // 1. STRICT FILTERS: Ignore URLs, emails, phone numbers, or long text
+      if (/www|http|linkedin|github|@/i.test(text)) continue;
+      if (/\d{5,}/.test(text)) continue; // Ignores 5+ continuous digits (phone numbers)
+      if (text.length > 30) continue;    // Page numbers are short
+
       let newText = null;
 
-      // 1. Match "Page X of Y" or "Page X / Y" or "Page X"
-      let match = text.match(/(\bPage\s*:?\s*)(\d+)(.*)/i);
-      if (match) {
-        const rest = match[3];
-        const ofMatch = rest.match(/^(\s+(?:of|\/)\s+)(\d+)(.*)$/i);
-        if (ofMatch) {
-          newText = match[1] + currentPage + ofMatch[1] + pageCount + ofMatch[3];
-        } else {
-          newText = match[1] + currentPage + rest;
+      // 2. Match "Page X of Y" or "Page X" or "p. X"
+      const pageMatch = text.match(/^(.*?)\b(?:Page|p\.)\s*:?\s*(\d+)(\s*(?:of|\/)\s*(\d+))?(.*)$/i);
+      if (pageMatch) {
+        let replaced = text.replace(/\b(?:Page|p\.)\s*:?\s*\d+/i, (m) => m.replace(/\d+/, currentPage));
+        if (pageMatch[3]) {
+          replaced = replaced.replace(/(\s*(?:of|\/)\s*)(\d+)/i, (m, p1, p2) => p1 + pageCount);
         }
+        newText = replaced;
       }
-      // 2. Match standalone numbers at the very top or bottom
+      // 3. Standalone number like "- 1 -", "1 / 3", "[1]"
       else {
-        const isHeader = line.originalBaseline < ps.pdfHeight * 0.15;
-        const isFooter = line.originalBaseline > ps.pdfHeight * 0.85;
+        // Check if the string is JUST numbers and basic punctuation
+        const stripped = text.replace(/\d+/g, '').replace(/[-\s\[\]\(\)\/]/g, '').replace(/(?:of|to)/ig, '').trim();
 
-        if (isHeader || isFooter) {
-          // Check for "X of Y" or "X / Y"
-          const ofMatch = text.match(/^(.*?)(\d+)(\s+(?:of|\/)\s+)(\d+)(.*)$/i);
-          if (ofMatch) {
-            newText = ofMatch[1] + currentPage + ofMatch[3] + pageCount + ofMatch[5];
-          } else {
-            // Just a number
-            const numMatch = text.match(/^(.*?)(\d+)(.*?)$/);
-            if (numMatch) {
-              newText = numMatch[1] + currentPage + numMatch[3];
+        if (stripped === '') {
+          const nums = text.match(/\d+/g);
+          if (nums) {
+            if (nums.length >= 2) {
+              // Likely "1 / 3", replace first with current, last with total
+              let count = 0;
+              newText = text.replace(/\d+/g, (match) => {
+                count++;
+                if (count === 1) return currentPage;
+                if (count === nums.length) return pageCount;
+                return match;
+              });
+            } else {
+              // Just a single number, replace it
+              newText = text.replace(/\d+/, currentPage);
             }
           }
         }
