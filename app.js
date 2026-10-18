@@ -1,5 +1,5 @@
 /* ================================================================
-   FreePDF Editor — line-by-line text editing
+   FreePDF Editor — line-by-line text editing + PDF merge
    ================================================================ */
 pdfjsLib.GlobalWorkerOptions.workerSrc =
   "https://cdnjs.cloudflare.com/ajax/libs/pdf.js/3.11.174/pdf.worker.min.js";
@@ -29,18 +29,33 @@ const els = {
   alignToolbar: document.getElementById('alignToolbar'),
   themeToggle: document.getElementById('themeToggle'),
   fontSelect: document.getElementById('fontSelect'),
+
+  /* Merge modal */
+  mergeBtn: document.getElementById('mergeBtn'),
+  mergeModal: document.getElementById('mergeModal'),
+  mergeClose: document.getElementById('mergeClose'),
+  mergeDrop: document.getElementById('mergeDrop'),
+  mergeFileInput: document.getElementById('mergeFileInput'),
+  mergeList: document.getElementById('mergeList'),
+  mergeClear: document.getElementById('mergeClear'),
+  mergeDownload: document.getElementById('mergeDownload'),
+  mergeMeta: document.getElementById('mergeMeta'),
 };
 
-const state = { pdfBytes:null, pdfDoc:null, pages:[], fonts:{}, focusedLine:null };
+const state = {
+  pdfBytes: null, pdfDoc: null, pages: [], fonts: {}, focusedLine: null,
+  mergeFiles: [],          // [{ id, name, bytes, size }]
+  mergeSortable: null,
+};
 
-function toast(msg, ms = 2500){
+function toast(msg, ms = 2500) {
   els.status.textContent = msg;
   els.status.classList.add('show');
   clearTimeout(toast._t);
   toast._t = setTimeout(() => els.status.classList.remove('show'), ms);
 }
-function downloadBlob(blob, filename){
-  try{ if(typeof saveAs === 'function'){ saveAs(blob, filename); return; } }catch(_){}
+function downloadBlob(blob, filename) {
+  try { if (typeof saveAs === 'function') { saveAs(blob, filename); return; } } catch (_) { }
   const url = URL.createObjectURL(blob);
   const a = document.createElement('a');
   a.href = url; a.download = filename; a.style.display = 'none';
@@ -51,14 +66,14 @@ function downloadBlob(blob, filename){
 document.getElementById('year').textContent = new Date().getFullYear();
 
 /* ---------- Theme ---------- */
-function applyTheme(t){
+function applyTheme(t) {
   document.documentElement.setAttribute('data-theme', t);
-  try{ localStorage.setItem('pdfedit-theme', t); }catch(_){}
+  try { localStorage.setItem('pdfedit-theme', t); } catch (_) { }
 }
-(function(){
+(function () {
   let saved = null;
-  try{ saved = localStorage.getItem('pdfedit-theme'); }catch(_){}
-  if(!saved) saved = window.matchMedia && window.matchMedia('(prefers-color-scheme: dark)').matches ? 'dark' : 'light';
+  try { saved = localStorage.getItem('pdfedit-theme'); } catch (_) { }
+  if (!saved) saved = window.matchMedia && window.matchMedia('(prefers-color-scheme: dark)').matches ? 'dark' : 'light';
   applyTheme(saved);
 })();
 els.themeToggle.addEventListener('click', () => {
@@ -67,73 +82,64 @@ els.themeToggle.addEventListener('click', () => {
 });
 
 /* ================================================================
-   1. LOAD FONTS — metric-compatible + Latin Modern (LaTeX)
+   1. LOAD FONTS
    ================================================================ */
-async function tryFetchFont(url){
-  try{
-    const r = await fetch(url, { mode:'cors' });
-    if(!r.ok) return null;
+async function tryFetchFont(url) {
+  try {
+    const r = await fetch(url, { mode: 'cors' });
+    if (!r.ok) return null;
     return await r.arrayBuffer();
-  }catch(_){ return null; }
+  } catch (_) { return null; }
 }
 
-async function loadMetricFonts(){
+async function loadMetricFonts() {
   const urls = {
-    'sans-regular':  'https://cdn.jsdelivr.net/npm/@fontsource/arimo/files/arimo-latin-400-normal.woff',
-    'sans-bold':     'https://cdn.jsdelivr.net/npm/@fontsource/arimo/files/arimo-latin-700-normal.woff',
+    'sans-regular': 'https://cdn.jsdelivr.net/npm/@fontsource/arimo/files/arimo-latin-400-normal.woff',
+    'sans-bold': 'https://cdn.jsdelivr.net/npm/@fontsource/arimo/files/arimo-latin-700-normal.woff',
     'serif-regular': 'https://cdn.jsdelivr.net/npm/@fontsource/tinos/files/tinos-latin-400-normal.woff',
-    'serif-bold':    'https://cdn.jsdelivr.net/npm/@fontsource/tinos/files/tinos-latin-700-normal.woff',
-    'mono-regular':  'https://cdn.jsdelivr.net/npm/@fontsource/cousine/files/cousine-latin-400-normal.woff',
-    'mono-bold':     'https://cdn.jsdelivr.net/npm/@fontsource/cousine/files/cousine-latin-700-normal.woff',
+    'serif-bold': 'https://cdn.jsdelivr.net/npm/@fontsource/tinos/files/tinos-latin-700-normal.woff',
+    'mono-regular': 'https://cdn.jsdelivr.net/npm/@fontsource/cousine/files/cousine-latin-400-normal.woff',
+    'mono-bold': 'https://cdn.jsdelivr.net/npm/@fontsource/cousine/files/cousine-latin-700-normal.woff',
   };
   const out = {}; let loaded = 0;
-  for(const [k, u] of Object.entries(urls)){
+  for (const [k, u] of Object.entries(urls)) {
     let buf = await tryFetchFont(u);
-    if(!buf) buf = await tryFetchFont(u.replace('.woff', '.ttf'));
-    if(buf){ out[k] = buf; loaded++; }
+    if (!buf) buf = await tryFetchFont(u.replace('.woff', '.ttf'));
+    if (buf) { out[k] = buf; loaded++; }
   }
 
-  /* Register Latin Modern Roman (LaTeX Computer Modern successor) */
+  /* Latin Modern (LaTeX) */
   const lmSources = [
     {
       regular: 'https://cdn.jsdelivr.net/npm/@fontsource/latin-modern-roman@5.0.8/files/latin-modern-roman-latin-400-normal.woff',
-      bold:    'https://cdn.jsdelivr.net/npm/@fontsource/latin-modern-roman@5.0.8/files/latin-modern-roman-latin-700-normal.woff',
-      italic:  'https://cdn.jsdelivr.net/npm/@fontsource/latin-modern-roman@5.0.8/files/latin-modern-roman-latin-400-italic.woff',
+      bold: 'https://cdn.jsdelivr.net/npm/@fontsource/latin-modern-roman@5.0.8/files/latin-modern-roman-latin-700-normal.woff',
+      italic: 'https://cdn.jsdelivr.net/npm/@fontsource/latin-modern-roman@5.0.8/files/latin-modern-roman-latin-400-italic.woff',
       boldItalic: 'https://cdn.jsdelivr.net/npm/@fontsource/latin-modern-roman@5.0.8/files/latin-modern-roman-latin-700-italic.woff',
     },
     {
       regular: 'https://cdn.jsdelivr.net/gh/alerque/libertinus@master/fonts/webfonts/LibertinusSerif-Regular.woff2',
-      bold:    'https://cdn.jsdelivr.net/gh/alerque/libertinus@master/fonts/webfonts/LibertinusSerif-Bold.woff2',
-      italic:  'https://cdn.jsdelivr.net/gh/alerque/libertinus@master/fonts/webfonts/LibertinusSerif-Italic.woff2',
+      bold: 'https://cdn.jsdelivr.net/gh/alerque/libertinus@master/fonts/webfonts/LibertinusSerif-Bold.woff2',
+      italic: 'https://cdn.jsdelivr.net/gh/alerque/libertinus@master/fonts/webfonts/LibertinusSerif-Italic.woff2',
       boldItalic: 'https://cdn.jsdelivr.net/gh/alerque/libertinus@master/fonts/webfonts/LibertinusSerif-BoldItalic.woff2',
     },
   ];
 
   let lmLoaded = false;
-  for(const src of lmSources){
-    try{
+  for (const src of lmSources) {
+    try {
       const faces = [
-        new FontFace('Latin Modern Roman', `url(${src.regular})`,    { weight:'400', style:'normal' }),
-        new FontFace('Latin Modern Roman', `url(${src.bold})`,       { weight:'700', style:'normal' }),
-        new FontFace('Latin Modern Roman', `url(${src.italic})`,     { weight:'400', style:'italic' }),
-        new FontFace('Latin Modern Roman', `url(${src.boldItalic})`, { weight:'700', style:'italic' }),
+        new FontFace('Latin Modern Roman', `url(${src.regular})`, { weight: '400', style: 'normal' }),
+        new FontFace('Latin Modern Roman', `url(${src.bold})`, { weight: '700', style: 'normal' }),
+        new FontFace('Latin Modern Roman', `url(${src.italic})`, { weight: '400', style: 'italic' }),
+        new FontFace('Latin Modern Roman', `url(${src.boldItalic})`, { weight: '700', style: 'italic' }),
       ];
       let allOk = true;
-      for(const f of faces){
-        try{ await f.load(); document.fonts.add(f); }
-        catch(e){ allOk = false; break; }
+      for (const f of faces) {
+        try { await f.load(); document.fonts.add(f); }
+        catch (e) { allOk = false; break; }
       }
-      if(allOk){
-        lmLoaded = true;
-        console.log('✓ Latin Modern Roman registered as a web font');
-        break;
-      }
-    }catch(e){
-      console.warn('Latin Modern source failed, trying fallback:', e);
-    }
-  }
-  if(!lmLoaded){
-    console.warn('Latin Modern Roman could not be loaded — LaTeX PDFs will use Georgia/Times fallback');
+      if (allOk) { lmLoaded = true; break; }
+    } catch (e) { }
   }
 
   els.statFonts.textContent = lmLoaded ? `${loaded}/6 + LM` : `${loaded}/6`;
@@ -141,111 +147,99 @@ async function loadMetricFonts(){
 }
 
 /* ================================================================
-   2. FONT NAME DETECTION + CSS FAMILY
+   2. FONT HELPERS
    ================================================================ */
-function cleanFontName(raw){
-  if(!raw) return { name:'Arial', family:'sans', bold:false, italic:false, raw:'' };
+function cleanFontName(raw) {
+  if (!raw) return { name: 'Arial', family: 'sans', bold: false, italic: false, raw: '' };
   const rawClean = String(raw).replace(/^[A-Z]{6}\+/, '');
   let n = rawClean;
-
   const map = {
-    'ArialMT':'Arial','Arial-BoldMT':'Arial','Arial-ItalicMT':'Arial','Arial-BoldItalicMT':'Arial','Arial':'Arial',
-    'Helvetica':'Helvetica','Helvetica-Bold':'Helvetica',
-    'TimesNewRomanPSMT':'Times New Roman','TimesNewRomanPS-BoldMT':'Times New Roman',
-    'Times-Roman':'Times New Roman','Times-Bold':'Times New Roman',
-    'CourierNewPSMT':'Courier New','Courier':'Courier New',
-    'Calibri':'Calibri','Calibri-Bold':'Calibri',
-    'Cambria':'Cambria','Georgia':'Georgia','Verdana':'Verdana',
+    'ArialMT': 'Arial', 'Arial-BoldMT': 'Arial', 'Arial-ItalicMT': 'Arial', 'Arial-BoldItalicMT': 'Arial', 'Arial': 'Arial',
+    'Helvetica': 'Helvetica', 'Helvetica-Bold': 'Helvetica',
+    'TimesNewRomanPSMT': 'Times New Roman', 'TimesNewRomanPS-BoldMT': 'Times New Roman',
+    'Times-Roman': 'Times New Roman', 'Times-Bold': 'Times New Roman',
+    'CourierNewPSMT': 'Courier New', 'Courier': 'Courier New',
+    'Calibri': 'Calibri', 'Calibri-Bold': 'Calibri',
+    'Cambria': 'Cambria', 'Georgia': 'Georgia', 'Verdana': 'Verdana',
   };
-
-  const bold   = /bold|black|heavy|semibold/i.test(n);
+  const bold = /bold|black|heavy|semibold/i.test(n);
   const italic = /italic|oblique|ital/i.test(n);
-
-  if(map[n]) n = map[n];
-  else n = n.replace(/[-_,](Bold|Italic|Oblique|Regular|MT|PS|Light|Medium|Semibold|Black|Heavy).*$/i,'')
-           .replace(/([a-z])([A-Z])/g,'$1 $2').trim();
-
-  if(!n || n.length > 60) n = 'Arial';
-
+  if (map[n]) n = map[n];
+  else n = n.replace(/[-_,](Bold|Italic|Oblique|Regular|MT|PS|Light|Medium|Semibold|Black|Heavy).*$/i, '')
+    .replace(/([a-z])([A-Z])/g, '$1 $2').trim();
+  if (!n || n.length > 60) n = 'Arial';
   let family = 'sans';
-  if(/times|georgia|garamond|cambria|serif|book|rom|cmr|cmm|lmodern|lmroman|computer\s*modern|latin\s*modern|nimbus|minion|charter|palatino|century|didot|bodoni|baskerville|caslon|libertine|garalde|antiqua|liberation\s*serif/i.test(n)){
+  if (/times|georgia|garamond|cambria|serif|book|rom|cmr|cmm|lmodern|lmroman|computer\s*modern|latin\s*modern|nimbus|minion|charter|palatino|century|didot|bodoni|baskerville|caslon|libertine|garalde|antiqua|liberation\s*serif/i.test(n)) {
     family = 'serif';
   }
-  if(/courier|mono|consol|typewriter/i.test(n)){
+  if (/courier|mono|consol|typewriter/i.test(n)) {
     family = 'mono';
   }
-
-  return { name:n, family, bold, italic, raw: rawClean };
+  return { name: n, family, bold, italic, raw: rawClean };
 }
-
-function metricKeyFor(f){
-  if(f.family === 'serif') return f.bold ? 'serif-bold' : 'serif-regular';
-  if(f.family === 'mono')  return f.bold ? 'mono-bold'  : 'mono-regular';
+function metricKeyFor(f) {
+  if (f.family === 'serif') return f.bold ? 'serif-bold' : 'serif-regular';
+  if (f.family === 'mono') return f.bold ? 'mono-bold' : 'mono-regular';
   return f.bold ? 'sans-bold' : 'sans-regular';
 }
-
-function isLatexFont(rawName){
-  if(!rawName) return false;
+function isLatexFont(rawName) {
+  if (!rawName) return false;
   return /cmr|cmm|cmbx|cmti|cmss|cmsy|lmodern|lmroman|lmsans|lmmono|computer\s*modern|latin\s*modern|nimbusrom|nimbus\s*rom|libertinus/i
     .test(String(rawName));
 }
-
-function cssFamilyFor(f){
+function cssFamilyFor(f) {
   const rawName = (f && (f.raw || f.name)) || '';
-  if(isLatexFont(rawName)){
+  if (isLatexFont(rawName)) {
     return '"Latin Modern Roman", "Computer Modern", "Libertinus Serif", Georgia, "Times New Roman", Times, serif';
   }
-  if(f.family === 'serif') return 'Georgia, "Times New Roman", Times, serif';
-  if(f.family === 'mono')  return '"Courier New", Courier, monospace';
+  if (f.family === 'serif') return 'Georgia, "Times New Roman", Times, serif';
+  if (f.family === 'mono') return '"Courier New", Courier, monospace';
   return 'Arial, Helvetica, sans-serif';
 }
 
 /* ================================================================
-   3. GROUP TEXT ITEMS INTO LINES
+   3. GROUP ITEMS INTO LINES
    ================================================================ */
-function groupItemsIntoLines(items){
+function groupItemsIntoLines(items) {
   const lines = [];
-  const sorted = [...items].sort((a,b) => a.top - b.top);
-
-  for(const it of sorted){
+  const sorted = [...items].sort((a, b) => a.top - b.top);
+  for (const it of sorted) {
     const h = Math.max(it.bottom - it.top, 1);
     let best = null, bestScore = 0;
-    for(const ln of lines){
+    for (const ln of lines) {
       const ov = Math.min(it.bottom, ln.bottom) - Math.max(it.top, ln.top);
-      if(ov <= 0) continue;
+      if (ov <= 0) continue;
       const s = ov / Math.min(h, ln.bottom - ln.top);
-      if(s > 0.5 && s > bestScore){ bestScore = s; best = ln; }
+      if (s > 0.5 && s > bestScore) { bestScore = s; best = ln; }
     }
-    if(best){
+    if (best) {
       best.items.push(it);
       best.top = Math.min(best.top, it.top);
       best.bottom = Math.max(best.bottom, it.bottom);
       best.left = Math.min(best.left, it.left);
       best.right = Math.max(best.right, it.right);
     } else {
-      lines.push({ items:[it], top:it.top, bottom:it.bottom, left:it.left, right:it.right });
+      lines.push({ items: [it], top: it.top, bottom: it.bottom, left: it.left, right: it.right });
     }
   }
-
-  for(const ln of lines){
-    ln.items.sort((a,b) => a.left - b.left);
+  for (const ln of lines) {
+    ln.items.sort((a, b) => a.left - b.left);
     ln.text = joinItemsText(ln.items);
-    ln.fontSize = ln.items.reduce((s,it) => s + it.fontSize, 0) / ln.items.length;
+    ln.fontSize = ln.items.reduce((s, it) => s + it.fontSize, 0) / ln.items.length;
     ln.baseline = Math.max(...ln.items.map(it => it.baseline));
     ln.font = ln.items[0].font;
   }
-  lines.sort((a,b) => a.top - b.top);
+  lines.sort((a, b) => a.top - b.top);
   return lines;
 }
-
-function joinItemsText(items){
+function joinItemsText(items) {
   let s = '';
-  for(let i = 0; i < items.length; i++){
+  for (let i = 0; i < items.length; i++) {
     const it = items[i];
-    if(i > 0){
-      const prev = items[i-1];
+    if (i > 0) {
+      const prev = items[i - 1];
       const gap = it.left - prev.right;
-      if(gap > prev.fontSize * 0.18 && !s.endsWith(' ') && !it.str.startsWith(' ')) s += ' ';
+      if (gap > prev.fontSize * 0.18 && !s.endsWith(' ') && !it.str.startsWith(' ')) s += ' ';
     }
     s += it.str;
   }
@@ -255,50 +249,42 @@ function joinItemsText(items){
 /* ================================================================
    4. ALIGNMENT DETECTION
    ================================================================ */
-function detectAlignmentForLine(line, allLines, fontSize){
+function detectAlignmentForLine(line, allLines, fontSize) {
   const lineHeight = fontSize * 1.25;
-  const group = allLines.filter(l =>
-    Math.abs(l.baseline - line.baseline) < lineHeight * 12
-  );
-  if(group.length < 2) return 'left';
-
+  const group = allLines.filter(l => Math.abs(l.baseline - line.baseline) < lineHeight * 12);
+  if (group.length < 2) return 'left';
   const tol = Math.max(fontSize * 0.7, 3);
-  const lefts  = group.map(l => l.left);
+  const lefts = group.map(l => l.left);
   const rights = group.map(l => l.right);
-
-  const leftsMatch  = lefts.every(l => Math.abs(l - lefts[0]) < tol);
+  const leftsMatch = lefts.every(l => Math.abs(l - lefts[0]) < tol);
   const rightsMatch = rights.every(r => Math.abs(r - rights[0]) < tol);
-
-  if(leftsMatch && !rightsMatch) return 'left';
-  if(rightsMatch && !leftsMatch) return 'right';
-  if(leftsMatch && rightsMatch) return 'left';
-
+  if (leftsMatch && !rightsMatch) return 'left';
+  if (rightsMatch && !leftsMatch) return 'right';
+  if (leftsMatch && rightsMatch) return 'left';
   const centers = group.map(l => (l.left + l.right) / 2);
   const centersMatch = centers.every(c => Math.abs(c - centers[0]) < tol);
-  if(centersMatch) return 'center';
-
+  if (centersMatch) return 'center';
   return 'left';
 }
 
 /* ================================================================
-   5. LOAD PDF
+   5. LOAD PDF (editor)
    ================================================================ */
-async function loadPdf(arrayBuffer, fileName){
+async function loadPdf(arrayBuffer, fileName) {
   state.pdfBytes = new Uint8Array(arrayBuffer);
   state.pdfDoc = await pdfjsLib.getDocument({ data: state.pdfBytes.slice() }).promise;
 
   els.pages.innerHTML = '';
   state.pages = [];
 
-  for(let p = 1; p <= state.pdfDoc.numPages; p++){
+  for (let p = 1; p <= state.pdfDoc.numPages; p++) {
     const page = await state.pdfDoc.getPage(p);
-    try{ await page.getOperatorList(); }catch(_){}
+    try { await page.getOperatorList(); } catch (_) { }
 
     const viewport = page.getViewport({ scale: 1 });
     const rvp = page.getViewport({ scale: 2 });
     const canvas = document.createElement('canvas');
-    canvas.width = rvp.width;
-    canvas.height = rvp.height;
+    canvas.width = rvp.width; canvas.height = rvp.height;
     canvas.style.width = viewport.width + 'px';
     canvas.style.height = viewport.height + 'px';
     await page.render({ canvasContext: canvas.getContext('2d'), viewport: rvp }).promise;
@@ -316,18 +302,18 @@ async function loadPdf(arrayBuffer, fileName){
     const tc = await page.getTextContent();
     const styles = tc.styles || {};
     const rawItems = [];
-    for(const it of tc.items){
-      if(!it.str || !it.str.trim()) continue;
+    for (const it of tc.items) {
+      if (!it.str || !it.str.trim()) continue;
       let rawFont = '';
-      try{
+      try {
         const fo = page.commonObjs.get(it.fontName);
-        if(fo && (fo.name || fo.loadedName)) rawFont = fo.name || fo.loadedName;
-      }catch(_){}
-      if(!rawFont && styles[it.fontName]) rawFont = styles[it.fontName].fontFamily || '';
+        if (fo && (fo.name || fo.loadedName)) rawFont = fo.name || fo.loadedName;
+      } catch (_) { }
+      if (!rawFont && styles[it.fontName]) rawFont = styles[it.fontName].fontFamily || '';
       const font = cleanFontName(rawFont);
       const tx = pdfjsLib.Util.transform(viewport.transform, it.transform);
       const fontSize = Math.hypot(tx[2], tx[3]);
-      if(fontSize < 2) continue;
+      if (fontSize < 2) continue;
       rawItems.push({
         str: it.str,
         left: tx[4],
@@ -340,17 +326,15 @@ async function loadPdf(arrayBuffer, fileName){
     }
 
     const lines = groupItemsIntoLines(rawItems);
-
-    for(const line of lines){
+    for (const line of lines) {
       const alignment = detectAlignmentForLine(line, lines, line.fontSize);
       const lineWidth = line.right - line.left;
       const buffer = Math.max(line.fontSize * 4, 60);
       const boxWidth = lineWidth + buffer;
-
       let boxLeft;
-      if(alignment === 'right')       boxLeft = line.right - boxWidth;
-      else if(alignment === 'center') boxLeft = ((line.left + line.right) / 2) - boxWidth / 2;
-      else                            boxLeft = line.left;
+      if (alignment === 'right') boxLeft = line.right - boxWidth;
+      else if (alignment === 'center') boxLeft = ((line.left + line.right) / 2) - boxWidth / 2;
+      else boxLeft = line.left;
 
       const el = document.createElement('div');
       el.className = 'txt';
@@ -391,13 +375,13 @@ async function loadPdf(arrayBuffer, fileName){
       el.addEventListener('blur', () => {
         setTimeout(() => {
           const a = document.activeElement;
-          if(a && (a === el || els.alignToolbar.contains(a))) return;
+          if (a && (a === el || els.alignToolbar.contains(a))) return;
           hideAlignToolbar();
         }, 150);
       });
       el.addEventListener('keydown', e => {
-        if(e.key === 'Escape') el.blur();
-        if(e.key === 'Enter'){ e.preventDefault(); el.blur(); }
+        if (e.key === 'Escape') el.blur();
+        if (e.key === 'Enter') { e.preventDefault(); el.blur(); }
       });
 
       wrap.appendChild(el);
@@ -420,7 +404,7 @@ async function loadPdf(arrayBuffer, fileName){
 /* ================================================================
    6. ALIGNMENT TOOLBAR
    ================================================================ */
-function showAlignToolbar(lstate){
+function showAlignToolbar(lstate) {
   state.focusedLine = lstate;
   const tb = els.alignToolbar;
   tb.style.visibility = 'hidden';
@@ -432,7 +416,7 @@ function showAlignToolbar(lstate){
   let left = Math.min(rect.left + sx, window.innerWidth + sx - tbRect.width - 12);
   left = Math.max(left, sx + 12);
   let top = rect.top + sy - tbRect.height - 8;
-  if(rect.top < tbRect.height + 20) top = rect.bottom + sy + 8;
+  if (rect.top < tbRect.height + 20) top = rect.bottom + sy + 8;
   tb.style.left = left + 'px';
   tb.style.top = top + 'px';
   tb.style.visibility = '';
@@ -440,40 +424,40 @@ function showAlignToolbar(lstate){
     b.classList.toggle('active', b.dataset.align === lstate.alignment));
   els.fontSelect.value = 'auto';
 }
-function hideAlignToolbar(){
+function hideAlignToolbar() {
   state.focusedLine = null;
   els.alignToolbar.classList.remove('show');
 }
-function repositionToolbar(){
-  if(state.focusedLine && els.alignToolbar.classList.contains('show')) showAlignToolbar(state.focusedLine);
+function repositionToolbar() {
+  if (state.focusedLine && els.alignToolbar.classList.contains('show')) showAlignToolbar(state.focusedLine);
 }
-els.viewport.addEventListener('scroll', repositionToolbar, { passive:true });
+els.viewport.addEventListener('scroll', repositionToolbar, { passive: true });
 window.addEventListener('resize', repositionToolbar);
 
-function applyAlignment(lstate, align){
+function applyAlignment(lstate, align) {
   lstate.alignment = align;
   lstate.el.style.textAlign = align;
   const boxWidth = lstate.el.offsetWidth;
   let boxLeft;
-  if(align === 'right')       boxLeft = lstate.originalRight - boxWidth;
-  else if(align === 'center') boxLeft = ((lstate.originalLeft + lstate.originalRight) / 2) - boxWidth / 2;
-  else                         boxLeft = lstate.originalLeft;
+  if (align === 'right') boxLeft = lstate.originalRight - boxWidth;
+  else if (align === 'center') boxLeft = ((lstate.originalLeft + lstate.originalRight) / 2) - boxWidth / 2;
+  else boxLeft = lstate.originalLeft;
   lstate.el.style.left = boxLeft + 'px';
   lstate.changed = true;
   lstate.el.classList.add('changed');
   els.alignToolbar.querySelectorAll('button[data-align]').forEach(b =>
     b.classList.toggle('active', b.dataset.align === align));
-  if(document.activeElement !== lstate.el) lstate.el.focus();
+  if (document.activeElement !== lstate.el) lstate.el.focus();
   updateStats();
 }
 
 els.alignToolbar.addEventListener('mousedown', e => e.preventDefault());
 els.alignToolbar.addEventListener('click', e => {
   const btn = e.target.closest('button');
-  if(!btn || !state.focusedLine) return;
-  if(btn.dataset.align){ applyAlignment(state.focusedLine, btn.dataset.align); return; }
-  if(btn.dataset.action === 'delete'){
-    if(!confirm('Clear this line?')) return;
+  if (!btn || !state.focusedLine) return;
+  if (btn.dataset.align) { applyAlignment(state.focusedLine, btn.dataset.align); return; }
+  if (btn.dataset.action === 'delete') {
+    if (!confirm('Clear this line?')) return;
     state.focusedLine.el.textContent = '';
     state.focusedLine.changed = true;
     state.focusedLine.el.classList.add('changed');
@@ -482,36 +466,36 @@ els.alignToolbar.addEventListener('click', e => {
 });
 
 els.fontSelect.addEventListener('change', e => {
-  if(!state.focusedLine) return;
+  if (!state.focusedLine) return;
   const key = e.target.value;
   const f = state.focusedLine.font;
-  if(key === 'sans')      state.focusedLine.el.style.fontFamily = 'Arial, Helvetica, sans-serif';
-  else if(key === 'serif')state.focusedLine.el.style.fontFamily = '"Times New Roman", Times, serif';
-  else if(key === 'mono') state.focusedLine.el.style.fontFamily = '"Courier New", Courier, monospace';
-  else                    state.focusedLine.el.style.fontFamily = cssFamilyFor(f);
+  if (key === 'sans') state.focusedLine.el.style.fontFamily = 'Arial, Helvetica, sans-serif';
+  else if (key === 'serif') state.focusedLine.el.style.fontFamily = '"Times New Roman", Times, serif';
+  else if (key === 'mono') state.focusedLine.el.style.fontFamily = '"Courier New", Courier, monospace';
+  else state.focusedLine.el.style.fontFamily = cssFamilyFor(f);
   state.focusedLine.changed = true;
   state.focusedLine.el.classList.add('changed');
 });
 
 document.addEventListener('keydown', e => {
-  if(!state.focusedLine) return;
-  if(!(e.ctrlKey || e.metaKey) || !e.shiftKey) return;
-  const map = { l:'left', e:'center', r:'right', j:'justify' };
+  if (!state.focusedLine) return;
+  if (!(e.ctrlKey || e.metaKey) || !e.shiftKey) return;
+  const map = { l: 'left', e: 'center', r: 'right', j: 'justify' };
   const k = e.key.toLowerCase();
-  if(map[k]){ e.preventDefault(); applyAlignment(state.focusedLine, map[k]); }
+  if (map[k]) { e.preventDefault(); applyAlignment(state.focusedLine, map[k]); }
 });
 
 /* ================================================================
    7. STATS
    ================================================================ */
-function updateStats(){
+function updateStats() {
   let words = 0, edited = 0, lines = 0;
-  for(const ps of state.pages){
+  for (const ps of state.pages) {
     lines += ps.lines.length;
-    for(const l of ps.lines){
+    for (const l of ps.lines) {
       const t = (l.el.textContent || '').trim();
-      if(t) words += t.split(/\s+/).length;
-      if(l.changed) edited++;
+      if (t) words += t.split(/\s+/).length;
+      if (l.changed) edited++;
     }
   }
   els.statPages.textContent = state.pages.length;
@@ -521,85 +505,265 @@ function updateStats(){
 }
 
 /* ================================================================
-   8. FILE INPUT + DRAG & DROP
+   8. FILE INPUT + DnD (editor)
    ================================================================ */
 els.file.addEventListener('change', async e => {
   const f = e.target.files[0];
-  if(!f) return;
-  try{ await loadPdf(await f.arrayBuffer(), f.name); }
-  catch(err){ console.error(err); toast('Could not read PDF: ' + err.message); }
+  if (!f) return;
+  try { await loadPdf(await f.arrayBuffer(), f.name); }
+  catch (err) { console.error(err); toast('Could not read PDF: ' + err.message); }
 });
-['dragover','dragenter'].forEach(ev =>
+['dragover', 'dragenter'].forEach(ev =>
   els.drop.addEventListener(ev, e => { e.preventDefault(); els.drop.classList.add('over'); }));
-['dragleave','drop'].forEach(ev =>
+['dragleave', 'drop'].forEach(ev =>
   els.drop.addEventListener(ev, e => { e.preventDefault(); els.drop.classList.remove('over'); }));
 els.drop.addEventListener('drop', async e => {
   const f = e.dataTransfer.files[0];
-  if(f && f.type === 'application/pdf'){
-    try{ await loadPdf(await f.arrayBuffer(), f.name); }
-    catch(err){ console.error(err); toast('Could not read PDF: ' + err.message); }
+  if (f && f.type === 'application/pdf') {
+    try { await loadPdf(await f.arrayBuffer(), f.name); }
+    catch (err) { console.error(err); toast('Could not read PDF: ' + err.message); }
   } else toast('Please drop a PDF file');
 });
 
 /* ================================================================
-   9. HELPERS
+   9. MERGE PDFs
    ================================================================ */
-function measurePdf(font, text, size){
-  try{ return font.widthOfTextAtSize(text, size); }
-  catch(_){ return text.length * size * 0.55; }
+function openMergeModal() {
+  els.mergeModal.classList.add('show');
+  renderMergeList();
+}
+function closeMergeModal() {
+  els.mergeModal.classList.remove('show');
+}
+
+els.mergeBtn.addEventListener('click', openMergeModal);
+els.mergeClose.addEventListener('click', closeMergeModal);
+els.mergeModal.addEventListener('click', e => {
+  if (e.target === els.mergeModal) closeMergeModal();
+});
+
+/* Drop zone */
+['dragover', 'dragenter'].forEach(ev =>
+  els.mergeDrop.addEventListener(ev, e => { e.preventDefault(); els.mergeDrop.classList.add('over'); }));
+['dragleave', 'drop'].forEach(ev =>
+  els.mergeDrop.addEventListener(ev, e => { e.preventDefault(); els.mergeDrop.classList.remove('over'); }));
+els.mergeDrop.addEventListener('drop', async e => {
+  const files = [...e.dataTransfer.files].filter(f => f.type === 'application/pdf');
+  if (files.length) await addMergeFiles(files);
+});
+els.mergeFileInput.addEventListener('change', async e => {
+  const files = [...e.target.files].filter(f => f.type === 'application/pdf');
+  if (files.length) await addMergeFiles(files);
+  e.target.value = '';
+});
+
+async function addMergeFiles(files) {
+  for (const f of files) {
+    try {
+      const buf = await f.arrayBuffer();
+      state.mergeFiles.push({
+        id: 'mf_' + Math.random().toString(36).slice(2, 9),
+        name: f.name,
+        size: f.size,
+        bytes: new Uint8Array(buf),
+      });
+    } catch (e) {
+      console.warn('Could not read', f.name, e);
+      toast('Could not read ' + f.name);
+    }
+  }
+  renderMergeList();
+}
+
+function renderMergeList() {
+  const list = els.mergeList;
+  list.innerHTML = '';
+
+  if (!state.mergeFiles.length) {
+    els.mergeDownload.disabled = true;
+    els.mergeMeta.textContent = 'Add two or more PDF files';
+    return;
+  }
+
+  state.mergeFiles.forEach((f, idx) => {
+    const li = document.createElement('li');
+    li.className = 'merge-item';
+    li.dataset.id = f.id;
+    li.innerHTML = `
+      <span class="grip" title="Drag to reorder">⋮⋮</span>
+      <span class="name" title="${escapeHtml(f.name)}">${escapeHtml(f.name)}</span>
+      <span class="size">${formatSize(f.size)}</span>
+      <span class="actions">
+        <button data-move="up" title="Move up" ${idx === 0 ? 'disabled' : ''}>↑</button>
+        <button data-move="down" title="Move down" ${idx === state.mergeFiles.length - 1 ? 'disabled' : ''}>↓</button>
+        <button data-remove="1" class="danger" title="Remove">✕</button>
+      </span>
+    `;
+    list.appendChild(li);
+  });
+
+  els.mergeDownload.disabled = state.mergeFiles.length < 2;
+  els.mergeMeta.textContent = `${state.mergeFiles.length} file${state.mergeFiles.length !== 1 ? 's' : ''} ready — order matters`;
+
+  /* Wire up controls */
+  list.querySelectorAll('button[data-move]').forEach(btn => {
+    btn.addEventListener('click', e => {
+      const li = e.target.closest('.merge-item');
+      const id = li.dataset.id;
+      const i = state.mergeFiles.findIndex(x => x.id === id);
+      const dir = btn.dataset.move;
+      const j = dir === 'up' ? i - 1 : i + 1;
+      if (j < 0 || j >= state.mergeFiles.length) return;
+      [state.mergeFiles[i], state.mergeFiles[j]] = [state.mergeFiles[j], state.mergeFiles[i]];
+      renderMergeList();
+    });
+  });
+  list.querySelectorAll('button[data-remove]').forEach(btn => {
+    btn.addEventListener('click', e => {
+      const id = e.target.closest('.merge-item').dataset.id;
+      state.mergeFiles = state.mergeFiles.filter(x => x.id !== id);
+      renderMergeList();
+    });
+  });
+
+  /* Drag & drop reorder */
+  list.querySelectorAll('.merge-item').forEach(item => {
+    item.draggable = true;
+    item.addEventListener('dragstart', e => {
+      item.classList.add('dragging');
+      e.dataTransfer.effectAllowed = 'move';
+      e.dataTransfer.setData('text/plain', item.dataset.id);
+    });
+    item.addEventListener('dragend', () => item.classList.remove('dragging'));
+    item.addEventListener('dragover', e => { e.preventDefault(); });
+    item.addEventListener('drop', e => {
+      e.preventDefault();
+      const srcId = e.dataTransfer.getData('text/plain');
+      const dstId = item.dataset.id;
+      if (!srcId || srcId === dstId) return;
+      const srcIdx = state.mergeFiles.findIndex(x => x.id === srcId);
+      const dstIdx = state.mergeFiles.findIndex(x => x.id === dstId);
+      if (srcIdx < 0 || dstIdx < 0) return;
+      const [moved] = state.mergeFiles.splice(srcIdx, 1);
+      state.mergeFiles.splice(dstIdx, 0, moved);
+      renderMergeList();
+    });
+  });
+}
+
+els.mergeClear.addEventListener('click', () => {
+  state.mergeFiles = [];
+  renderMergeList();
+  toast('Cleared');
+});
+
+els.mergeDownload.addEventListener('click', async () => {
+  if (state.mergeFiles.length < 2) { toast('Add at least two PDFs'); return; }
+  els.mergeDownload.disabled = true;
+  toast('Merging…');
+  try {
+    const { PDFDocument } = PDFLib;
+    const merged = await PDFDocument.create();
+    let totalPages = 0;
+
+    for (const f of state.mergeFiles) {
+      try {
+        const src = await PDFDocument.load(f.bytes, { ignoreEncryption: true });
+        const indices = src.getPageIndices();
+        const pages = await merged.copyPages(src, indices);
+        pages.forEach(p => merged.addPage(p));
+        totalPages += pages.length;
+      } catch (err) {
+        console.warn('Failed to merge', f.name, err);
+        toast('Skipped ' + f.name + ' (could not read)');
+      }
+    }
+
+    if (!merged.getPageCount()) {
+      toast('Nothing to merge');
+      els.mergeDownload.disabled = false;
+      return;
+    }
+
+    const bytes = await merged.save();
+    downloadBlob(new Blob([bytes], { type: 'application/pdf' }), 'merged.pdf');
+    toast(`Merged ${state.mergeFiles.length} files → ${totalPages} pages ✔`);
+    closeMergeModal();
+  } catch (err) {
+    console.error(err);
+    toast('Merge failed: ' + err.message, 4000);
+  } finally {
+    els.mergeDownload.disabled = state.mergeFiles.length < 2;
+  }
+});
+
+function formatSize(bytes) {
+  if (bytes < 1024) return bytes + ' B';
+  if (bytes < 1024 * 1024) return (bytes / 1024).toFixed(1) + ' KB';
+  return (bytes / 1024 / 1024).toFixed(1) + ' MB';
+}
+function escapeHtml(s) {
+  return String(s).replace(/[&<>"']/g, c => ({
+    '&': '&amp;', '<': '&lt;', '>': '&gt;', '"': '&quot;', "'": '&#39;'
+  }[c]));
 }
 
 /* ================================================================
-   10. EXPORT PDF — replace edited lines in place
+   10. EXPORT PDF (editor)
    ================================================================ */
-async function buildPdfBytes(){
+function measurePdf(font, text, size) {
+  try { return font.widthOfTextAtSize(text, size); }
+  catch (_) { return text.length * size * 0.55; }
+}
+
+async function buildPdfBytes() {
   const { PDFDocument, StandardFonts, rgb } = PDFLib;
   const outDoc = await PDFDocument.load(state.pdfBytes, { ignoreEncryption: true });
   outDoc.registerFontkit(window.fontkit);
 
   const fallback = {
-    'sans-regular':  await outDoc.embedFont(StandardFonts.Helvetica),
-    'sans-bold':     await outDoc.embedFont(StandardFonts.HelveticaBold),
+    'sans-regular': await outDoc.embedFont(StandardFonts.Helvetica),
+    'sans-bold': await outDoc.embedFont(StandardFonts.HelveticaBold),
     'serif-regular': await outDoc.embedFont(StandardFonts.TimesRoman),
-    'serif-bold':    await outDoc.embedFont(StandardFonts.TimesRomanBold),
-    'mono-regular':  await outDoc.embedFont(StandardFonts.Courier),
-    'mono-bold':     await outDoc.embedFont(StandardFonts.CourierBold),
+    'serif-bold': await outDoc.embedFont(StandardFonts.TimesRomanBold),
+    'mono-regular': await outDoc.embedFont(StandardFonts.Courier),
+    'mono-bold': await outDoc.embedFont(StandardFonts.CourierBold),
   };
   const embedded = {};
-  for(const [k, bytes] of Object.entries(state.fonts)){
-    try{ embedded[k] = await outDoc.embedFont(bytes, { subset:true }); }
-    catch(e){ console.warn('embed failed:', k, e); }
+  for (const [k, bytes] of Object.entries(state.fonts)) {
+    try { embedded[k] = await outDoc.embedFont(bytes, { subset: true }); }
+    catch (e) { console.warn('embed failed:', k, e); }
   }
   const pickFont = f => embedded[metricKeyFor(f)] || fallback[metricKeyFor(f)];
 
   const outPages = outDoc.getPages();
 
-  for(let i = 0; i < state.pages.length; i++){
+  for (let i = 0; i < state.pages.length; i++) {
     const ps = state.pages[i];
     const op = outPages[i];
     const { width: pw, height: ph } = op.getSize();
     const sx = pw / ps.pdfWidth;
     const sy = ph / ps.pdfHeight;
 
-    for(const l of ps.lines){
-      if(!l.changed) continue;
+    for (const l of ps.lines) {
+      if (!l.changed) continue;
 
-      const vpTop    = l.originalBaseline - l.fontSize * 1.10;
+      const vpTop = l.originalBaseline - l.fontSize * 1.10;
       const vpBottom = l.originalBaseline + l.fontSize * 0.35;
-      const pdfY     = ph - vpBottom * sy;
-      const rectH    = (vpBottom - vpTop) * sy;
-      if(rectH > 0){
+      const pdfY = ph - vpBottom * sy;
+      const rectH = (vpBottom - vpTop) * sy;
+      if (rectH > 0) {
         op.drawRectangle({
           x: l.originalLeft * sx - 2,
           y: pdfY,
           width: l.originalWidth * sx + 4,
           height: rectH,
-          color: rgb(1,1,1),
+          color: rgb(1, 1, 1),
         });
       }
 
       const text = (l.el.textContent || '').replace(/\s+/g, ' ').trim();
-      if(!text) continue;
+      if (!text) continue;
 
       const font = pickFont(l.font);
       const fontPt = l.fontSize * sy;
@@ -608,13 +772,13 @@ async function buildPdfBytes(){
       const align = l.alignment || 'left';
 
       let x;
-      if(align === 'right')       x = (l.originalRight * sx) - textWidth;
-      else if(align === 'center') x = ((l.originalLeft + l.originalRight) / 2) * sx - textWidth / 2;
-      else                         x = l.originalLeft * sx;
+      if (align === 'right') x = (l.originalRight * sx) - textWidth;
+      else if (align === 'center') x = ((l.originalLeft + l.originalRight) / 2) * sx - textWidth / 2;
+      else x = l.originalLeft * sx;
 
-      try{
-        op.drawText(text, { x, y: baselinePdfY, size: fontPt, font, color: rgb(0,0,0) });
-      }catch(e){
+      try {
+        op.drawText(text, { x, y: baselinePdfY, size: fontPt, font, color: rgb(0, 0, 0) });
+      } catch (e) {
         console.warn('drawText failed:', text, e);
       }
     }
@@ -626,68 +790,65 @@ async function buildPdfBytes(){
    11. PREVIEW MODAL
    ================================================================ */
 let currentPreviewBlob = null;
-function showPreview(blob){
-  if(currentPreviewBlob && currentPreviewBlob.__url) URL.revokeObjectURL(currentPreviewBlob.__url);
+function showPreview(blob) {
+  if (currentPreviewBlob && currentPreviewBlob.__url) URL.revokeObjectURL(currentPreviewBlob.__url);
   currentPreviewBlob = blob;
   const url = URL.createObjectURL(blob);
   blob.__url = url;
   els.previewFrame.src = url;
-  els.previewMeta.textContent = `${state.pages.length} page${state.pages.length !== 1 ? 's' : ''} · ${(blob.size/1024).toFixed(1)} KB`;
+  els.previewMeta.textContent = `${state.pages.length} page${state.pages.length !== 1 ? 's' : ''} · ${(blob.size / 1024).toFixed(1)} KB`;
   els.modal.classList.add('show');
 }
-function hidePreview(){ els.modal.classList.remove('show'); }
+function hidePreview() { els.modal.classList.remove('show'); }
 els.previewClose.addEventListener('click', hidePreview);
 els.previewCancel.addEventListener('click', hidePreview);
-els.modal.addEventListener('click', e => { if(e.target === els.modal) hidePreview(); });
+els.modal.addEventListener('click', e => { if (e.target === els.modal) hidePreview(); });
 document.addEventListener('keydown', e => {
-  if(e.key === 'Escape' && els.modal.classList.contains('show')) hidePreview();
+  if (e.key === 'Escape' && els.modal.classList.contains('show')) hidePreview();
 });
 els.previewDownload.addEventListener('click', () => {
-  if(!currentPreviewBlob) return;
+  if (!currentPreviewBlob) return;
   downloadBlob(currentPreviewBlob, 'edited.pdf');
   hidePreview();
   toast('Downloaded ✔');
 });
 
 els.exportPdf.addEventListener('click', async () => {
-  if(!state.pdfDoc) return;
+  if (!state.pdfDoc) return;
   els.exportPdf.disabled = true;
   toast('Building PDF…');
-  try{
+  try {
     const bytes = await buildPdfBytes();
-    showPreview(new Blob([bytes], { type:'application/pdf' }));
+    showPreview(new Blob([bytes], { type: 'application/pdf' }));
     toast('Preview ready');
-  }catch(err){
+  } catch (err) {
     console.error(err);
     toast('PDF export failed: ' + err.message, 4000);
-  }finally{
+  } finally {
     els.exportPdf.disabled = false;
   }
 });
 
 /* ================================================================
-   12. EXPORT DOCX — layout-preserving table technique
+   12. DOCX EXPORT (layout-preserving table technique)
    ================================================================ */
 els.exportDocx.addEventListener('click', async () => {
-  if(!state.pdfDoc) return;
-  if(typeof docx === 'undefined'){ toast('DOCX library failed to load.', 4000); return; }
+  if (!state.pdfDoc) return;
+  if (typeof docx === 'undefined') { toast('DOCX library failed to load.', 4000); return; }
   els.exportDocx.disabled = true;
   toast('Building DOCX…');
-  try{
+  try {
     const {
       Document, Packer, Paragraph, TextRun, AlignmentType,
-      Table, TableRow, TableCell, WidthType, BorderStyle, HeightRule,
-      VerticalAlign,
+      Table, TableRow, TableCell, WidthType, BorderStyle, HeightRule, VerticalAlign,
     } = docx;
 
     const alignMap = {
-      left:    AlignmentType.LEFT,
-      right:   AlignmentType.RIGHT,
-      center:  AlignmentType.CENTER,
+      left: AlignmentType.LEFT,
+      right: AlignmentType.RIGHT,
+      center: AlignmentType.CENTER,
       justify: AlignmentType.JUSTIFIED,
     };
-
-    /* No-border spec used everywhere (invisible table = clean page) */
     const noBorder = { style: BorderStyle.NONE, size: 0, color: 'FFFFFF' };
     const noBorders = {
       top: noBorder, bottom: noBorder, left: noBorder, right: noBorder,
@@ -696,62 +857,52 @@ els.exportDocx.addEventListener('click', async () => {
 
     const children = [];
 
-    for(let p = 0; p < state.pages.length; p++){
+    for (let p = 0; p < state.pages.length; p++) {
       const ps = state.pages[p];
-      const pageWidthTwips = Math.round(ps.pdfWidth * 20);   // 1pt = 20 twips
+      const pageWidthTwips = Math.round(ps.pdfWidth * 20);
 
-      if(p > 0){
-        children.push(new Paragraph({ children: [], pageBreakBefore: true }));
-      }
+      if (p > 0) children.push(new Paragraph({ children: [], pageBreakBefore: true }));
 
-      /* Sort lines by baseline so rows are in visual order */
       const sorted = [...ps.lines].sort((a, b) => a.originalBaseline - b.originalBaseline);
-
       const rows = [];
       let prevBaseline = 0;
 
-      for(const line of sorted){
+      for (const line of sorted) {
         const text = (line.el.textContent || '').replace(/\s+/g, ' ').trim();
-
-        const baselinePt = line.originalBaseline;
-        const gapPt = Math.max(baselinePt - prevBaseline, 0);
-        prevBaseline = baselinePt;
-
-        /* Row height in twips — exact distance from the previous line */
-        const rowHeightTwips = Math.max(Math.round(gapPt * 20), 200);   // min 10pt
+        const gapPt = Math.max(line.originalBaseline - prevBaseline, 0);
+        prevBaseline = line.originalBaseline;
+        const rowHeightTwips = Math.max(Math.round(gapPt * 20), 200);
 
         const cellPara = new Paragraph({
           alignment: alignMap[line.alignment] || AlignmentType.LEFT,
           spacing: { before: 0, after: 0, line: Math.round(line.fontSize * 1.15 * 20) },
-          children: [ new TextRun({
+          children: [new TextRun({
             text: text || ' ',
             font: line.font.name,
             bold: line.font.bold,
             italics: line.font.italic,
             size: Math.max(8, Math.min(96, Math.round(line.fontSize * 2))),
-          }) ],
+          })],
         });
 
         rows.push(new TableRow({
           height: { value: rowHeightTwips, rule: HeightRule.EXACT },
-          children: [ new TableCell({
+          children: [new TableCell({
             width: { size: pageWidthTwips, type: WidthType.DXA },
             margins: { top: 0, bottom: 0, left: 0, right: 0 },
-            borders: {
-              top: noBorder, bottom: noBorder, left: noBorder, right: noBorder,
-            },
+            borders: { top: noBorder, bottom: noBorder, left: noBorder, right: noBorder },
             verticalAlign: VerticalAlign.TOP,
-            children: [ cellPara ],
-          }) ],
+            children: [cellPara],
+          })],
         }));
       }
 
-      if(rows.length){
+      if (rows.length) {
         children.push(new Table({
           width: { size: pageWidthTwips, type: WidthType.DXA },
           columnWidths: [pageWidthTwips],
           borders: noBorders,
-          rows: rows,
+          rows,
         }));
       }
     }
@@ -760,12 +911,11 @@ els.exportDocx.addEventListener('click', async () => {
     const doc = new Document({
       creator: 'FreePDF Editor',
       title: 'Edited PDF',
-      description: 'Converted from PDF by FreePDF Editor',
       sections: [{
         properties: {
           page: {
             size: {
-              width:  Math.round(page0.pdfWidth  * 20),
+              width: Math.round(page0.pdfWidth * 20),
               height: Math.round(page0.pdfHeight * 20),
             },
             margin: { top: 0, right: 0, bottom: 0, left: 0 },
@@ -778,10 +928,10 @@ els.exportDocx.addEventListener('click', async () => {
     const blob = await Packer.toBlob(doc);
     downloadBlob(blob, 'edited.docx');
     toast('Saved as DOCX ✔ — layout preserved');
-  }catch(err){
+  } catch (err) {
     console.error(err);
     toast('DOCX export failed: ' + (err?.message || err), 5000);
-  }finally{
+  } finally {
     els.exportDocx.disabled = false;
   }
 });

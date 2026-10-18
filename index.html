@@ -1,35 +1,40 @@
 <!DOCTYPE html>
 <html lang="en">
+
 <head>
-<meta charset="UTF-8" />
-<meta name="viewport" content="width=device-width, initial-scale=1" />
-<title>Free PDF Editor — Edit Text in Any PDF Online (No Sign-Up)</title>
-<meta name="description" content="Free browser-based PDF editor. Click any line of text and edit it. Font, position, and alignment stay exactly as the PDF. Save as PDF or convert to DOCX. No sign-up, no subscription, no uploads." />
-<meta name="keywords" content="free pdf editor, edit pdf online, pdf text editor, edit pdf without subscription, browser pdf editor, edit pdf like word, free pdf editor no sign up" />
-<meta name="robots" content="index, follow, max-image-preview:large" />
-<meta name="author" content="Arafat Khan" />
-<meta name="theme-color" content="#3b5bdb" />
-<link rel="canonical" href="https://pdfeditnow.pages.dev/" />
-<meta property="og:type" content="website" />
-<meta property="og:title" content="Free PDF Editor — Edit Text in Any PDF" />
-<meta property="og:description" content="Click any line, edit it. Free, private, browser-based." />
-<meta property="og:url" content="https://pdfeditnow.pages.dev/" />
-<meta property="og:site_name" content="FreePDF Editor" />
-<meta property="og:image" content="https://pdfeditnow.pages.dev/preview.png" />
-<meta property="og:locale" content="en_US" />
-<meta name="twitter:card" content="summary_large_image" />
-<meta name="twitter:title" content="Free PDF Editor — Edit Text in Any PDF" />
-<meta name="twitter:description" content="Free browser-based PDF editor. No subscription." />
-<meta name="twitter:image" content="https://pdfeditnow.pages.dev/preview.png" />
-<link rel="icon" href="data:image/svg+xml,<svg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 100 100'><rect width='100' height='100' rx='20' fill='%233b5bdb'/><text x='50' y='68' font-size='56' font-family='Arial' font-weight='bold' fill='white' text-anchor='middle'>P</text></svg>" />
-<script type="application/ld+json">
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1" />
+  <title>Free PDF Editor — Edit Text & Merge PDFs Online (No Sign-Up)</title>
+  <meta name="description"
+    content="Free browser-based PDF editor and merger. Edit text in any PDF, merge multiple PDFs into one. No sign-up, no subscription, no uploads. Your files never leave your device." />
+  <meta name="keywords"
+    content="free pdf editor, merge pdf, edit pdf online, pdf text editor, combine pdf, browser pdf editor, free pdf merger, pdf merger no upload" />
+  <meta name="robots" content="index, follow, max-image-preview:large" />
+  <meta name="author" content="Arafat Khan" />
+  <meta name="theme-color" content="#3b5bdb" />
+  <link rel="canonical" href="https://pdfeditnow.pages.dev/" />
+  <meta property="og:type" content="website" />
+  <meta property="og:title" content="Free PDF Editor & Merger — Edit Text, Merge PDFs Online" />
+  <meta property="og:description"
+    content="Edit any PDF and merge multiple PDFs into one. Free, private, browser-based." />
+  <meta property="og:url" content="https://pdfeditnow.pages.dev/" />
+  <meta property="og:site_name" content="FreePDF Editor" />
+  <meta property="og:image" content="https://pdfeditnow.pages.dev/preview.png" />
+  <meta property="og:locale" content="en_US" />
+  <meta name="twitter:card" content="summary_large_image" />
+  <meta name="twitter:title" content="Free PDF Editor & Merger — Edit Text, Merge PDFs" />
+  <meta name="twitter:description" content="Free browser-based PDF editor and merger. No subscription." />
+  <meta name="twitter:image" content="https://pdfeditnow.pages.dev/preview.png" />
+  <link rel="icon"
+    href="data:image/svg+xml,<svg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 100 100'><rect width='100' height='100' rx='20' fill='%233b5bdb'/><text x='50' y='68' font-size='56' font-family='Arial,sans-serif' font-weight='bold' fill='white' text-anchor='middle'>P</text></svg>" />
+  <script type="application/ld+json">
 {
   "@context": "https://schema.org",
   "@type": "SoftwareApplication",
-  "name": "FreePDF Editor",
+  "name": "FreePDF Editor & Merger",
   "applicationCategory": "UtilitiesApplication",
   "operatingSystem": "Web",
-  "description": "Free browser-based PDF editor. Edit any PDF text line by line.",
+  "description": "Free browser-based PDF editor and merger. Edit any PDF text and merge multiple PDFs into one.",
   "url": "https://pdfeditnow.pages.dev/",
   "author": {
     "@type": "Person",
@@ -42,148 +47,218 @@
   },
   "offers": { "@type": "Offer", "price": "0", "priceCurrency": "USD" },
   "featureList": [
-    "Click any line of text and edit it in place",
-    "Font, position, and alignment preserved",
-    "Left, center, right, and justified alignment",
-    "Save as PDF or convert to DOCX",
+    "Edit text in any PDF line by line",
+    "Merge multiple PDFs into one",
+    "Font matching and alignment preserved",
+    "Save as PDF or DOCX",
     "Day and night theme",
     "100% browser-based, no uploads"
   ]
 }
 </script>
-<link rel="stylesheet" href="style.css" />
+  <link rel="stylesheet" href="style.css" />
 </head>
+
 <body>
 
-<div class="sr-only">
-  <h1>Free PDF Editor — Edit Text in Any PDF Online</h1>
-  <p>Click any line of text in your PDF and edit it. Fonts, positions, and alignment are preserved.</p>
-</div>
-
-<div class="align-toolbar" id="alignToolbar">
-  <button data-align="left" title="Left (Ctrl+Shift+L)">
-    <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round"><line x1="3" y1="6" x2="21" y2="6"/><line x1="3" y1="12" x2="15" y2="12"/><line x1="3" y1="18" x2="19" y2="18"/></svg>
-  </button>
-  <button data-align="center" title="Center (Ctrl+Shift+E)">
-    <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round"><line x1="3" y1="6" x2="21" y2="6"/><line x1="6" y1="12" x2="18" y2="12"/><line x1="4" y1="18" x2="20" y2="18"/></svg>
-  </button>
-  <button data-align="right" title="Right (Ctrl+Shift+R)">
-    <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round"><line x1="3" y1="6" x2="21" y2="6"/><line x1="9" y1="12" x2="21" y2="12"/><line x1="5" y1="18" x2="21" y2="18"/></svg>
-  </button>
-  <button data-align="justify" title="Justify (Ctrl+Shift+J)">
-    <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round"><line x1="3" y1="6" x2="21" y2="6"/><line x1="3" y1="12" x2="21" y2="12"/><line x1="3" y1="18" x2="21" y2="18"/></svg>
-  </button>
-  <div class="sep"></div>
-  <label class="font-picker">
-    <span>Font</span>
-    <select id="fontSelect">
-      <option value="auto">Auto</option>
-      <option value="sans">Sans-serif</option>
-      <option value="serif">Serif</option>
-      <option value="mono">Monospace</option>
-    </select>
-  </label>
-  <div class="sep"></div>
-  <button data-action="delete" title="Clear this line">
-    <svg viewBox="0 0 24 24" fill="none" stroke="#dc2626" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M3 6h18"/><path d="M8 6V4a2 2 0 0 1 2-2h4a2 2 0 0 1 2 2v2"/><path d="M19 6l-1 14a2 2 0 0 1-2 2H8a2 2 0 0 1-2-2L5 6"/></svg>
-  </button>
-</div>
-
-<aside>
-  <div class="brand"><span class="dot"></span><h1>Free<span>PDF</span></h1></div>
-
-  <div class="side-section">
-    <h2>How to use</h2>
-    <div class="step"><div class="n">1</div><div class="t"><b>Open your PDF</b><small>Click "Open PDF" or drag a file.</small></div></div>
-    <div class="step"><div class="n">2</div><div class="t"><b>Click a line of text</b><small>That one line becomes editable. Nothing else moves.</small></div></div>
-    <div class="step"><div class="n">3</div><div class="t"><b>Type your change</b><small>Font, size, and position stay the same as the PDF.</small></div></div>
-    <div class="step"><div class="n">4</div><div class="t"><b>Preview &amp; save</b><small>Download as PDF, or save as DOCX for further editing.</small></div></div>
+  <div class="sr-only">
+    <h1>Free PDF Editor & Merger — Edit Text and Merge PDFs Online</h1>
+    <p>Edit text in any PDF and merge multiple PDFs into one. No sign-up, no subscription, no uploads.</p>
   </div>
 
-  <div class="side-section">
-    <h2>Why lines, not paragraphs?</h2>
-    <p>PDFs store each line at a fixed position. Real editors like Smallpdf and Acrobat also edit line by line — that's how it stays exact.</p>
-    <p>For real paragraph reflow, click <b>Save as DOCX</b> and edit in Word.</p>
+  <!-- Alignment toolbar -->
+  <div class="align-toolbar" id="alignToolbar" role="toolbar" aria-label="Text alignment">
+    <button data-align="left" title="Left (Ctrl+Shift+L)"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor"
+        stroke-width="2" stroke-linecap="round">
+        <line x1="3" y1="6" x2="21" y2="6" />
+        <line x1="3" y1="12" x2="15" y2="12" />
+        <line x1="3" y1="18" x2="19" y2="18" />
+      </svg></button>
+    <button data-align="center" title="Center (Ctrl+Shift+E)"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor"
+        stroke-width="2" stroke-linecap="round">
+        <line x1="3" y1="6" x2="21" y2="6" />
+        <line x1="6" y1="12" x2="18" y2="12" />
+        <line x1="4" y1="18" x2="20" y2="18" />
+      </svg></button>
+    <button data-align="right" title="Right (Ctrl+Shift+R)"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor"
+        stroke-width="2" stroke-linecap="round">
+        <line x1="3" y1="6" x2="21" y2="6" />
+        <line x1="9" y1="12" x2="21" y2="12" />
+        <line x1="5" y1="18" x2="21" y2="18" />
+      </svg></button>
+    <button data-align="justify" title="Justify (Ctrl+Shift+J)"><svg viewBox="0 0 24 24" fill="none"
+        stroke="currentColor" stroke-width="2" stroke-linecap="round">
+        <line x1="3" y1="6" x2="21" y2="6" />
+        <line x1="3" y1="12" x2="21" y2="12" />
+        <line x1="3" y1="18" x2="21" y2="18" />
+      </svg></button>
+    <div class="sep"></div>
+    <label class="font-picker"><span>Font</span>
+      <select id="fontSelect">
+        <option value="auto">Auto</option>
+        <option value="sans">Sans-serif</option>
+        <option value="serif">Serif</option>
+        <option value="mono">Monospace</option>
+      </select>
+    </label>
+    <div class="sep"></div>
+    <button data-action="delete" title="Clear this line"><svg viewBox="0 0 24 24" fill="none" stroke="#dc2626"
+        stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
+        <path d="M3 6h18" />
+        <path d="M8 6V4a2 2 0 0 1 2-2h4a2 2 0 0 1 2 2v2" />
+        <path d="M19 6l-1 14a2 2 0 0 1-2 2H8a2 2 0 0 1-2-2L5 6" />
+      </svg></button>
   </div>
 
-  <div class="side-section">
-    <h2>Document stats</h2>
-    <div class="stat-row"><span class="k">Pages</span><span class="v" id="statPages">0</span></div>
-    <div class="stat-row"><span class="k">Editable lines</span><span class="v" id="statLines">0</span></div>
-    <div class="stat-row"><span class="k">Words</span><span class="v" id="statWords">0</span></div>
-    <div class="stat-row"><span class="k">Edited</span><span class="v" id="statEdited">0</span></div>
-    <div class="stat-row"><span class="k">Fonts loaded</span><span class="v" id="statFonts">—</span></div>
-  </div>
-
-  <div class="side-footer">
-    <p class="built-by">Built by <b>Arafat Khan</b></p>
-    <div class="socials">
-      <a href="https://github.com/iamthearafatkhan" target="_blank" rel="noopener noreferrer" title="GitHub">
-        <svg viewBox="0 0 24 24" fill="currentColor"><path d="M12 .5C5.7.5.5 5.7.5 12c0 5.1 3.3 9.4 7.9 10.9.6.1.8-.3.8-.6v-2c-3.2.7-3.9-1.5-3.9-1.5-.5-1.3-1.3-1.7-1.3-1.7-1.1-.7.1-.7.1-.7 1.2.1 1.8 1.2 1.8 1.2 1 1.8 2.8 1.3 3.5 1 .1-.8.4-1.3.8-1.6-2.6-.3-5.3-1.3-5.3-5.8 0-1.3.5-2.3 1.2-3.2-.1-.3-.5-1.5.1-3.1 0 0 1-.3 3.3 1.2.9-.3 1.9-.4 2.9-.4 1 0 2 .1 2.9.4 2.3-1.5 3.3-1.2 3.3-1.2.6 1.6.2 2.8.1 3.1.8.9 1.2 1.9 1.2 3.2 0 4.5-2.7 5.5-5.3 5.8.4.4.8 1.1.8 2.2v3.3c0 .3.2.7.8.6 4.7-1.6 7.9-5.8 7.9-10.9C23.5 5.7 18.3.5 12 .5z"/></svg>
-      </a>
-      <a href="https://www.linkedin.com/in/iamthearafatkhan/" target="_blank" rel="noopener noreferrer" title="LinkedIn">
-        <svg viewBox="0 0 24 24" fill="currentColor"><path d="M20.5 2h-17C2.7 2 2 2.7 2 3.5v17C2 21.3 2.7 22 3.5 22h17c.8 0 1.5-.7 1.5-1.5v-17C22 2.7 21.3 2 20.5 2zM8 19H5V9h3v10zM6.5 7.7c-.9 0-1.7-.7-1.7-1.7s.7-1.7 1.7-1.7 1.7.7 1.7 1.7-.8 1.7-1.7 1.7zM19 19h-3v-5.3c0-1.3-.5-2.1-1.6-2.1-.9 0-1.4.6-1.6 1.2-.1.2-.1.5-.1.8V19h-3V9h3v1.3c.4-.6 1.1-1.5 2.7-1.5 2 0 3.6 1.3 3.6 4V19z"/></svg>
-      </a>
-      <a href="https://arafatkhan.vercel.app" target="_blank" rel="noopener noreferrer" title="Portfolio">
-        <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><circle cx="12" cy="12" r="10"/><line x1="2" y1="12" x2="22" y2="12"/><path d="M12 2a15 15 0 0 1 4 10 15 15 0 0 1-4 10 15 15 0 0 1-4-10 15 15 0 0 1 4-10z"/></svg>
-      </a>
-    </div>
-    <p class="copy">© <span id="year"></span> FreePDF Editor</p>
-  </div>
-</aside>
-
-<main>
-  <header class="topbar">
-    <div class="left-side">
-      <label class="btn primary" for="file">📂 Open PDF</label>
-      <input id="file" type="file" accept="application/pdf" />
-      <span class="file-chip hidden" id="fileChip"><span>📄</span><span id="fileName">No file</span></span>
-    </div>
-    <div class="center-actions">
-      <button id="exportPdf" class="primary" disabled>💾 Save as PDF</button>
-      <button id="exportDocx" disabled>📝 Convert to DOCX</button>
-    </div>
-    <div class="right-side">
-      <button id="themeToggle" class="theme-toggle" title="Toggle theme">
-        <svg class="icon-moon" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M21 12.79A9 9 0 1 1 11.21 3 7 7 0 0 0 21 12.79z"/></svg>
-        <svg class="icon-sun" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><circle cx="12" cy="12" r="4"/><line x1="12" y1="2" x2="12" y2="4"/><line x1="12" y1="20" x2="12" y2="22"/><line x1="4.93" y1="4.93" x2="6.34" y2="6.34"/><line x1="17.66" y1="17.66" x2="19.07" y2="19.07"/><line x1="2" y1="12" x2="4" y2="12"/><line x1="20" y1="12" x2="22" y2="12"/><line x1="4.93" y1="19.07" x2="6.34" y2="17.66"/><line x1="17.66" y1="6.34" x2="19.07" y2="4.93"/></svg>
-      </button>
-      <span class="info" id="docInfo"></span>
-    </div>
-  </header>
-
-  <div class="viewport" id="viewport">
-    <div id="drop" class="drop">
-      <h2>Drop a PDF here, or click "Open PDF"</h2>
-      <p>Your PDF text becomes editable. Click any line to change it.</p>
-      <p class="seo-hint">Free online PDF editor — no sign-up, no subscription, no watermark.<br>Click any line of text and edit it in place.</p>
-    </div>
-    <div id="pages"></div>
-  </div>
-</main>
-
-<div class="modal" id="previewModal">
-  <div class="modal-card">
-    <div class="modal-head">
-      <h3>Preview</h3><span class="meta" id="previewMeta"></span><span class="spacer"></span>
-      <button id="previewClose" class="ghost">✕ Close</button>
-    </div>
-    <div class="modal-body"><iframe id="previewFrame" title="PDF preview"></iframe></div>
-    <div class="modal-foot">
-      <small>If the preview looks correct, click Download.</small><span class="spacer"></span>
-      <button id="previewCancel">← Back to editing</button>
-      <button id="previewDownload" class="primary">⬇ Download PDF</button>
+  <!-- MERGE MODAL -->
+  <div class="merge-modal" id="mergeModal">
+    <div class="merge-card">
+      <div class="merge-head">
+        <h2>Merge PDFs</h2>
+        <span class="merge-meta" id="mergeMeta">Add two or more PDF files</span>
+        <span class="spacer"></span>
+        <button id="mergeClose" class="ghost">✕ Close</button>
+      </div>
+      <div class="merge-body">
+        <div class="merge-drop" id="mergeDrop">
+          <p><b>Drop PDF files here</b> or <label for="mergeFileInput" class="merge-link">browse</label></p>
+          <input id="mergeFileInput" type="file" accept="application/pdf" multiple style="display:none" />
+        </div>
+        <ul class="merge-list" id="mergeList"></ul>
+      </div>
+      <div class="merge-foot">
+        <button id="mergeClear" class="ghost">Clear all</button>
+        <span class="spacer"></span>
+        <button id="mergeDownload" class="primary" disabled>⬇ Merge & Download</button>
+      </div>
     </div>
   </div>
-</div>
 
-<div class="status" id="status"></div>
+  <aside>
+    <div class="brand"><span class="dot"></span>
+      <h1>Free<span>PDF</span></h1>
+    </div>
+    <div class="side-section">
+      <h2>How to use</h2>
+      <div class="step">
+        <div class="n">1</div>
+        <div class="t"><b>Open your PDF</b><small>Click "Open PDF" or drag a file.</small></div>
+      </div>
+      <div class="step">
+        <div class="n">2</div>
+        <div class="t"><b>Click a line of text</b><small>That line becomes editable. Nothing else moves.</small></div>
+      </div>
+      <div class="step">
+        <div class="n">3</div>
+        <div class="t"><b>Type your change</b><small>Font, size, and position stay the same as the PDF.</small></div>
+      </div>
+      <div class="step">
+        <div class="n">4</div>
+        <div class="t"><b>Preview &amp; save</b><small>Download as PDF, or save as DOCX for further editing.</small>
+        </div>
+      </div>
+    </div>
+    <div class="side-section">
+      <h2>Merge PDFs</h2>
+      <p>Click <b>Merge PDFs</b> in the top bar to combine multiple PDFs into one — free, in your browser.</p>
+    </div>
+    <div class="side-section">
+      <h2>Document stats</h2>
+      <div class="stat-row"><span class="k">Pages</span><span class="v" id="statPages">0</span></div>
+      <div class="stat-row"><span class="k">Editable lines</span><span class="v" id="statLines">0</span></div>
+      <div class="stat-row"><span class="k">Words</span><span class="v" id="statWords">0</span></div>
+      <div class="stat-row"><span class="k">Edited</span><span class="v" id="statEdited">0</span></div>
+      <div class="stat-row"><span class="k">Fonts loaded</span><span class="v" id="statFonts">—</span></div>
+    </div>
+    <div class="side-footer">
+      <p class="built-by">Built by <b>Arafat Khan</b></p>
+      <div class="socials">
+        <a href="https://github.com/iamthearafatkhan" target="_blank" rel="noopener noreferrer" title="GitHub"><svg
+            viewBox="0 0 24 24" fill="currentColor">
+            <path
+              d="M12 .5C5.7.5.5 5.7.5 12c0 5.1 3.3 9.4 7.9 10.9.6.1.8-.3.8-.6v-2c-3.2.7-3.9-1.5-3.9-1.5-.5-1.3-1.3-1.7-1.3-1.7-1.1-.7.1-.7.1-.7 1.2.1 1.8 1.2 1.8 1.2 1 1.8 2.8 1.3 3.5 1 .1-.8.4-1.3.8-1.6-2.6-.3-5.3-1.3-5.3-5.8 0-1.3.5-2.3 1.2-3.2-.1-.3-.5-1.5.1-3.1 0 0 1-.3 3.3 1.2.9-.3 1.9-.4 2.9-.4 1 0 2 .1 2.9.4 2.3-1.5 3.3-1.2 3.3-1.2.6 1.6.2 2.8.1 3.1.8.9 1.2 1.9 1.2 3.2 0 4.5-2.7 5.5-5.3 5.8.4.4.8 1.1.8 2.2v3.3c0 .3.2.7.8.6 4.7-1.6 7.9-5.8 7.9-10.9C23.5 5.7 18.3.5 12 .5z" />
+          </svg></a>
+        <a href="https://www.linkedin.com/in/iamthearafatkhan/" target="_blank" rel="noopener noreferrer"
+          title="LinkedIn"><svg viewBox="0 0 24 24" fill="currentColor">
+            <path
+              d="M20.5 2h-17C2.7 2 2 2.7 2 3.5v17C2 21.3 2.7 22 3.5 22h17c.8 0 1.5-.7 1.5-1.5v-17C22 2.7 21.3 2 20.5 2zM8 19H5V9h3v10zM6.5 7.7c-.9 0-1.7-.7-1.7-1.7s.7-1.7 1.7-1.7 1.7.7 1.7 1.7-.8 1.7-1.7 1.7zM19 19h-3v-5.3c0-1.3-.5-2.1-1.6-2.1-.9 0-1.4.6-1.6 1.2-.1.2-.1.5-.1.8V19h-3V9h3v1.3c.4-.6 1.1-1.5 2.7-1.5 2 0 3.6 1.3 3.6 4V19z" />
+          </svg></a>
+        <a href="https://arafatkhan.vercel.app" target="_blank" rel="noopener noreferrer" title="Portfolio"><svg
+            viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round"
+            stroke-linejoin="round">
+            <circle cx="12" cy="12" r="10" />
+            <line x1="2" y1="12" x2="22" y2="12" />
+            <path d="M12 2a15 15 0 0 1 4 10 15 15 0 0 1-4 10 15 15 0 0 1-4-10 15 15 0 0 1 4-10z" />
+          </svg></a>
+      </div>
+      <p class="copy">© <span id="year"></span> FreePDF Editor</p>
+    </div>
+  </aside>
 
-<script src="https://cdnjs.cloudflare.com/ajax/libs/pdf.js/3.11.174/pdf.min.js"></script>
-<script src="https://cdnjs.cloudflare.com/ajax/libs/pdf-lib/1.17.1/pdf-lib.min.js"></script>
-<script src="https://unpkg.com/@pdf-lib/fontkit@1.1.1/dist/fontkit.umd.min.js"></script>
-<script src="https://cdnjs.cloudflare.com/ajax/libs/FileSaver.js/2.0.5/FileSaver.min.js"></script>
-<script src="https://cdn.jsdelivr.net/npm/docx@8.5.0/build/index.umd.js"></script>
-<script src="app.js"></script>
+  <main>
+    <header class="topbar">
+      <div class="left-side">
+        <label class="btn primary" for="file">📂 Open PDF</label>
+        <input id="file" type="file" accept="application/pdf" />
+        <button id="mergeBtn" class="btn">🔗 Merge PDFs</button>
+        <span class="file-chip hidden" id="fileChip"><span>📄</span><span id="fileName">No file</span></span>
+      </div>
+      <div class="center-actions">
+        <button id="exportPdf" class="primary" disabled>💾 Save as PDF</button>
+        <button id="exportDocx" disabled>📝 Convert to DOCX</button>
+      </div>
+      <div class="right-side">
+        <button id="themeToggle" class="theme-toggle" title="Toggle theme"><svg class="icon-moon" viewBox="0 0 24 24"
+            fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
+            <path d="M21 12.79A9 9 0 1 1 11.21 3 7 7 0 0 0 21 12.79z" />
+          </svg><svg class="icon-sun" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"
+            stroke-linecap="round" stroke-linejoin="round">
+            <circle cx="12" cy="12" r="4" />
+            <line x1="12" y1="2" x2="12" y2="4" />
+            <line x1="12" y1="20" x2="12" y2="22" />
+            <line x1="4.93" y1="4.93" x2="6.34" y2="6.34" />
+            <line x1="17.66" y1="17.66" x2="19.07" y2="19.07" />
+            <line x1="2" y1="12" x2="4" y2="12" />
+            <line x1="20" y1="12" x2="22" y2="12" />
+            <line x1="4.93" y1="19.07" x2="6.34" y2="17.66" />
+            <line x1="17.66" y1="6.34" x2="19.07" y2="4.93" />
+          </svg></button>
+        <span class="info" id="docInfo"></span>
+      </div>
+    </header>
+
+    <div class="viewport" id="viewport">
+      <div id="drop" class="drop">
+        <h2>Drop a PDF here, or click "Open PDF"</h2>
+        <p>Your PDF text becomes editable. Click any line to change it.</p>
+        <p class="seo-hint">Free online PDF editor and merger — no sign-up, no subscription, no watermark.<br>Edit text
+          or merge multiple PDFs into one.</p>
+      </div>
+      <div id="pages"></div>
+    </div>
+  </main>
+
+  <div class="modal" id="previewModal">
+    <div class="modal-card">
+      <div class="modal-head">
+        <h3>Preview</h3><span class="meta" id="previewMeta"></span><span class="spacer"></span><button id="previewClose"
+          class="ghost">✕ Close</button>
+      </div>
+      <div class="modal-body"><iframe id="previewFrame" title="PDF preview"></iframe></div>
+      <div class="modal-foot"><small>If the preview looks correct, click Download.</small><span
+          class="spacer"></span><button id="previewCancel">← Back to editing</button><button id="previewDownload"
+          class="primary">⬇ Download PDF</button></div>
+    </div>
+  </div>
+
+  <div class="status" id="status"></div>
+
+  <script src="https://cdnjs.cloudflare.com/ajax/libs/pdf.js/3.11.174/pdf.min.js"></script>
+  <script src="https://cdnjs.cloudflare.com/ajax/libs/pdf-lib/1.17.1/pdf-lib.min.js"></script>
+  <script src="https://unpkg.com/@pdf-lib/fontkit@1.1.1/dist/fontkit.umd.min.js"></script>
+  <script src="https://cdnjs.cloudflare.com/ajax/libs/FileSaver.js/2.0.5/FileSaver.min.js"></script>
+  <script src="https://cdn.jsdelivr.net/npm/docx@8.5.0/build/index.umd.js"></script>
+  <script src="app.js"></script>
 </body>
+
 </html>
