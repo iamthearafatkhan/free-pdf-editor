@@ -97,7 +97,7 @@ Helpful contributions especially welcome for:
 
 - Better handwriting / OCR support
 - Multi-column PDF layouts
-- Right-to-left language support (Arabic, Hebrew)
+- Right-to-left language support (Arabic, Bangla etc)
 
 ---
 
