@@ -30,7 +30,6 @@ const els = {
   themeToggle: document.getElementById('themeToggle'),
   fontSelect: document.getElementById('fontSelect'),
 
-  /* Merge modal */
   mergeBtn: document.getElementById('mergeBtn'),
   mergeModal: document.getElementById('mergeModal'),
   mergeClose: document.getElementById('mergeClose'),
@@ -40,12 +39,13 @@ const els = {
   mergeClear: document.getElementById('mergeClear'),
   mergeDownload: document.getElementById('mergeDownload'),
   mergeMeta: document.getElementById('mergeMeta'),
+
+  renumberBtn: document.getElementById('renumberBtn'),
 };
 
 const state = {
   pdfBytes: null, pdfDoc: null, pages: [], fonts: {}, focusedLine: null,
-  mergeFiles: [],          // [{ id, name, bytes, size }]
-  mergeSortable: null,
+  mergeFiles: [],
 };
 
 function toast(msg, ms = 2500) {
@@ -393,6 +393,7 @@ async function loadPdf(arrayBuffer, fileName) {
 
   els.exportPdf.disabled = false;
   els.exportDocx.disabled = false;
+  els.renumberBtn.disabled = false;
   els.drop.style.display = 'none';
   els.fileChip.classList.remove('hidden');
   els.fileName.textContent = fileName || 'document.pdf';
@@ -542,7 +543,6 @@ els.mergeModal.addEventListener('click', e => {
   if (e.target === els.mergeModal) closeMergeModal();
 });
 
-/* Drop zone */
 ['dragover', 'dragenter'].forEach(ev =>
   els.mergeDrop.addEventListener(ev, e => { e.preventDefault(); els.mergeDrop.classList.add('over'); }));
 ['dragleave', 'drop'].forEach(ev =>
@@ -605,7 +605,6 @@ function renderMergeList() {
   els.mergeDownload.disabled = state.mergeFiles.length < 2;
   els.mergeMeta.textContent = `${state.mergeFiles.length} file${state.mergeFiles.length !== 1 ? 's' : ''} ready — order matters`;
 
-  /* Wire up controls */
   list.querySelectorAll('button[data-move]').forEach(btn => {
     btn.addEventListener('click', e => {
       const li = e.target.closest('.merge-item');
@@ -626,7 +625,6 @@ function renderMergeList() {
     });
   });
 
-  /* Drag & drop reorder */
   list.querySelectorAll('.merge-item').forEach(item => {
     item.draggable = true;
     item.addEventListener('dragstart', e => {
@@ -709,7 +707,78 @@ function escapeHtml(s) {
 }
 
 /* ================================================================
-   10. EXPORT PDF (editor)
+   10. FIX PAGE NUMBERS
+   ================================================================ */
+function renumberPages() {
+  if (!state.pdfDoc) { toast('Open a PDF first'); return; }
+  if (!state.pages || !state.pages.length) return;
+
+  const pageCount = state.pages.length;
+  let updated = 0;
+
+  for (let p = 0; p < state.pages.length; p++) {
+    const ps = state.pages[p];
+    const currentPage = p + 1;
+
+    for (const line of ps.lines) {
+      const text = (line.el.textContent || '').trim();
+      if (!text) continue;
+
+      let match = text.match(/^(.*?\bPage\s+)(\d+)(\s+(?:of|\/)\s+)(\d+)(.*)$/i);
+      if (match) {
+        const newText = match[1] + currentPage + match[3] + pageCount + match[5];
+        if (newText !== text) {
+          line.el.textContent = newText;
+          line.changed = true;
+          line.el.classList.add('changed');
+          updated++;
+        }
+        continue;
+      }
+
+      match = text.match(/^(.*?\bPage\s+)(\d+)(.*)$/i);
+      if (match) {
+        const newText = match[1] + currentPage + match[3];
+        if (newText !== text) {
+          line.el.textContent = newText;
+          line.changed = true;
+          line.el.classList.add('changed');
+          updated++;
+        }
+        continue;
+      }
+
+      const isHeader = line.originalBaseline < ps.pdfHeight * 0.15;
+      const isFooter = line.originalBaseline > ps.pdfHeight * 0.85;
+
+      if (isHeader || isFooter) {
+        const numMatch = text.match(/^(\D*)(\d+)(\D*)$/);
+        if (numMatch) {
+          const numStr = numMatch[2];
+          const num = parseInt(numStr, 10);
+          if (numStr.length <= 3 && num !== currentPage) {
+            const newText = numMatch[1] + currentPage + numMatch[3];
+            line.el.textContent = newText;
+            line.changed = true;
+            line.el.classList.add('changed');
+            updated++;
+          }
+        }
+      }
+    }
+  }
+
+  if (updated > 0) {
+    updateStats();
+    toast(`Fixed ${updated} page number${updated !== 1 ? 's' : ''} ✔`);
+  } else {
+    toast('No page numbers found to update');
+  }
+}
+els.renumberBtn.addEventListener('click', renumberPages);
+
+/* ================================================================
+   11. EXPORT PDF (editor)
    ================================================================ */
 function measurePdf(font, text, size) {
   try { return font.widthOfTextAtSize(text, size); }
@@ -787,7 +856,7 @@ async function buildPdfBytes() {
 }
 
 /* ================================================================
-   11. PREVIEW MODAL
+   12. PREVIEW MODAL
    ================================================================ */
 let currentPreviewBlob = null;
 function showPreview(blob) {
@@ -830,7 +899,7 @@ els.exportPdf.addEventListener('click', async () => {
 });
 
 /* ================================================================
-   12. DOCX EXPORT (layout-preserving table technique)
+   13. DOCX EXPORT (layout-preserving table technique)
    ================================================================ */
 els.exportDocx.addEventListener('click', async () => {
   if (!state.pdfDoc) return;
@@ -937,6 +1006,6 @@ els.exportDocx.addEventListener('click', async () => {
 });
 
 /* ================================================================
-   13. BOOT
+   14. BOOT
    ================================================================ */
 (async () => { state.fonts = await loadMetricFonts(); })();
