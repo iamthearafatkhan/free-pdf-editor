@@ -393,7 +393,7 @@ async function loadPdf(arrayBuffer, fileName) {
 
   els.exportPdf.disabled = false;
   els.exportDocx.disabled = false;
-  els.renumberBtn.disabled = false;
+  els.renumberBtn.disabled = false; // Enabled here
   els.drop.style.display = 'none';
   els.fileChip.classList.remove('hidden');
   els.fileName.textContent = fileName || 'document.pdf';
@@ -707,11 +707,14 @@ function escapeHtml(s) {
 }
 
 /* ================================================================
-   10. FIX PAGE NUMBERS
+   10. FIX PAGE NUMBERS (UPDATED & MORE ROBUST)
    ================================================================ */
 function renumberPages() {
   if (!state.pdfDoc) { toast('Open a PDF first'); return; }
   if (!state.pages || !state.pages.length) return;
+
+  // Blur any active editing line so the DOM updates correctly
+  if (document.activeElement) document.activeElement.blur();
 
   const pageCount = state.pages.length;
   let updated = 0;
@@ -724,46 +727,44 @@ function renumberPages() {
       const text = (line.el.textContent || '').trim();
       if (!text) continue;
 
-      let match = text.match(/^(.*?\bPage\s+)(\d+)(\s+(?:of|\/)\s+)(\d+)(.*)$/i);
+      let newText = null;
+
+      // 1. Match "Page X of Y" or "Page X / Y" or "Page X"
+      let match = text.match(/(\bPage\s*:?\s*)(\d+)(.*)/i);
       if (match) {
-        const newText = match[1] + currentPage + match[3] + pageCount + match[5];
-        if (newText !== text) {
-          line.el.textContent = newText;
-          line.changed = true;
-          line.el.classList.add('changed');
-          updated++;
+        const rest = match[3];
+        const ofMatch = rest.match(/^(\s+(?:of|\/)\s+)(\d+)(.*)$/i);
+        if (ofMatch) {
+          newText = match[1] + currentPage + ofMatch[1] + pageCount + ofMatch[3];
+        } else {
+          newText = match[1] + currentPage + rest;
         }
-        continue;
       }
+      // 2. Match standalone numbers at the very top or bottom
+      else {
+        const isHeader = line.originalBaseline < ps.pdfHeight * 0.15;
+        const isFooter = line.originalBaseline > ps.pdfHeight * 0.85;
 
-      match = text.match(/^(.*?\bPage\s+)(\d+)(.*)$/i);
-      if (match) {
-        const newText = match[1] + currentPage + match[3];
-        if (newText !== text) {
-          line.el.textContent = newText;
-          line.changed = true;
-          line.el.classList.add('changed');
-          updated++;
-        }
-        continue;
-      }
-
-      const isHeader = line.originalBaseline < ps.pdfHeight * 0.15;
-      const isFooter = line.originalBaseline > ps.pdfHeight * 0.85;
-
-      if (isHeader || isFooter) {
-        const numMatch = text.match(/^(\D*)(\d+)(\D*)$/);
-        if (numMatch) {
-          const numStr = numMatch[2];
-          const num = parseInt(numStr, 10);
-          if (numStr.length <= 3 && num !== currentPage) {
-            const newText = numMatch[1] + currentPage + numMatch[3];
-            line.el.textContent = newText;
-            line.changed = true;
-            line.el.classList.add('changed');
-            updated++;
+        if (isHeader || isFooter) {
+          // Check for "X of Y" or "X / Y"
+          const ofMatch = text.match(/^(.*?)(\d+)(\s+(?:of|\/)\s+)(\d+)(.*)$/i);
+          if (ofMatch) {
+            newText = ofMatch[1] + currentPage + ofMatch[3] + pageCount + ofMatch[5];
+          } else {
+            // Just a number
+            const numMatch = text.match(/^(.*?)(\d+)(.*?)$/);
+            if (numMatch) {
+              newText = numMatch[1] + currentPage + numMatch[3];
+            }
           }
         }
+      }
+
+      if (newText && newText !== text) {
+        line.el.textContent = newText;
+        line.changed = true;
+        line.el.classList.add('changed');
+        updated++;
       }
     }
   }
@@ -899,7 +900,7 @@ els.exportPdf.addEventListener('click', async () => {
 });
 
 /* ================================================================
-   13. DOCX EXPORT (layout-preserving table technique)
+   13. DOCX EXPORT
    ================================================================ */
 els.exportDocx.addEventListener('click', async () => {
   if (!state.pdfDoc) return;
