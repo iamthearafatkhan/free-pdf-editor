@@ -1,108 +1,81 @@
-# FreePDF Editor
+# 📄 FreePDF Editor & Merger
 
-**Free browser-based PDF editor — edit text in any PDF like Word.**
-No sign-up. No subscription. No uploads. Your file never leaves your device.
+**A completely free, browser-based PDF editor and merger. Edit text in any PDF, combine multiple files, and fix page numbers — without uploading your files to a server.**
 
-🔗 **Live:** [pdfeditnow.pages.dev](https://pdfeditnow.pages.dev/)
+[![Live Site](https://img.shields.io/badge/Live_Site-pdfeditnow.pages.dev-blue?style=for-the-badge&logo=cloudflare)](https://pdfeditnow.pages.dev/)
+[![License: MIT](https://img.shields.io/badge/License-MIT-green.svg?style=for-the-badge)](https://opensource.org/licenses/MIT)
+[![Privacy First](https://img.shields.io/badge/Privacy-100%25_Client_Side-brightgreen?style=for-the-badge)](https://pdfeditnow.pages.dev/)
+[![No Subscriptions](https://img.shields.io/badge/Subscriptions-%240_Forever-success?style=for-the-badge)](https://pdfeditnow.pages.dev/)
 
----
+## 🚀 Why this exists
 
-## Why this exists
+Most online PDF editors (Smallpdf, iLovePDF, Adobe) hit you with a paywall the moment you need to do something useful. They also require you to upload your private documents to their servers.
 
-Most online PDF editors demand a subscription after one or two edits.
-Adobe Acrobat, Smallpdf, iLovePDF — all have paywalls the moment you need
-something real.
-
-This is a free alternative. Everything runs **inside your browser** — no
-server, no account, no tracking. Your PDF is never uploaded anywhere.
-
----
-
-## Features
-
-- ✏️ **Edit existing text** inside any PDF
-- ➕ **Add new text** anywhere on the page (double-click empty space)
-- 🔄 **Reflow like Word** — delete a line and the text below slides up
-- 🎨 **Font matching** — Arial, Times, Courier, Calibri detected and preserved
-- 💾 **Save as PDF** (visual match) **or DOCX** (fully editable in Word)
-- 👁️ **Preview before download** — nothing saves until you approve it
-- 🔒 **100% private** — no uploads, no accounts, no analytics, no tracking
+**FreePDF Editor** solves both problems:
+- It is **100% free** and open-source.
+- It runs **entirely in your browser**. Your files never leave your device.
+- It uses advanced web technologies to edit the actual PDF structure, preserving fonts and alignment.
 
 ---
 
-## How it works
+## ✨ Features
 
-1. **PDF.js** renders each page to a canvas in the browser.
-2. **Text items are extracted** with their exact position, font, size, and style.
-3. An **editable overlay** is placed over each paragraph — you type directly on the page.
-4. On export, **pdf-lib** white-outs the original text and writes your edits back
-   using metric-identical substitute fonts (Arimo ≈ Arial, Tinos ≈ Times,
-   Cousine ≈ Courier) so the result looks the same in any PDF viewer.
-5. **DOCX export** writes the real font names so Word renders them correctly.
-
-No backend. No server. All processing happens in the tab you already have open.
+- ✏️ **True PDF Text Editing**: Click any line of text and edit it exactly where it sits.
+- 🔗 **Merge PDFs**: Drag, drop, reorder, and combine multiple PDFs into one.
+- 🔢 **Auto-Fix Page Numbers**: Automatically updates "Page X of Y" and header/footer numbers after merging.
+- 🎨 **Font & Alignment Preservation**: Retains original fonts (including LaTeX Computer Modern) and text alignment.
+- 📝 **PDF to DOCX**: Convert PDFs to Word documents while preserving the layout as closely as possible.
+- 🌙 **Day/Night Theme**: Easy on the eyes, with automatic system preference detection.
+- 🔒 **Zero Server Uploads**: 100% privacy. No accounts, no tracking, no file limits.
 
 ---
 
-## Built with
+## 🛠️ Built With (Tech Stack)
 
-| Library | Purpose | License |
-|---|---|---|
-| [PDF.js](https://github.com/mozilla/pdf.js) | Render PDF pages | Apache 2.0 |
-| [pdf-lib](https://github.com/Hopding/pdf-lib) | Create and modify PDFs | MIT |
-| [@pdf-lib/fontkit](https://github.com/Hopding/fontkit) | Embed custom fonts | MIT |
-| [docx](https://github.com/dolanmiu/docx) | Generate DOCX files | MIT |
-| [FileSaver.js](https://github.com/eligrey/FileSaver.js) | Save files in the browser | MIT |
+This project is built as a static web application using vanilla JavaScript and powerful open-source libraries. **No backend or database is required.**
 
----
-
-## Deploy your own
-
-This is a single `index.html` file. No build step.
-
-### Cloudflare Pages (recommended — unlimited bandwidth)
-1. Create a free account at [dash.cloudflare.com](https://dash.cloudflare.com).
-2. Workers & Pages → Create → Pages → **Upload assets**.
-3. Drag the folder containing `index.html`, `robots.txt`, and `sitemap.xml`.
-4. Done — deployed in ~30 seconds.
-
-### GitHub Pages
-1. Create a public repo, upload the files.
-2. Settings → Pages → Deploy from branch → `main` / `root`.
+| Tool | Purpose |
+| :--- | :--- |
+| [![PDF.js](https://img.shields.io/badge/-PDF.js-red)](https://mozilla.github.io/pdf.js/) | Renders PDF pages to the browser canvas. |
+| [![pdf-lib](https://img.shields.io/badge/-pdf--lib-blue)](https://pdf-lib.js.org/) | Creates, modifies, and merges PDF documents in the browser. |
+| [![docx](https://img.shields.io/badge/-docx-orange)](https://docx.js.org/) | Generates the exported Word (`.docx`) files. |
+| [![FileSaver](https://img.shields.io/badge/-FileSaver.js-green)](https://github.com/eligrey/FileSaver.js/) | Handles downloading the generated files. |
+| [![Fontkit](https://img.shields.io/badge/-fontkit-purple)](https://github.com/Hopding/fontkit) | Embeds custom fonts during the PDF export process. |
 
 ---
 
-## Keywords
+## 💻 How to Use
 
-free pdf editor · edit pdf online · pdf text editor · no sign up pdf editor ·
-browser pdf editor · pdf editor without subscription · edit pdf like word ·
-free pdf editor no watermark · online pdf editor free · pdf editor in browser
+1. **Open the App**: Go to [pdfeditnow.pages.dev](https://pdfeditnow.pages.dev/).
+2. **Edit Text**: Click "Open PDF" and select your file. Click on any line of text to edit it. Use the floating toolbar to change alignment or fonts.
+3. **Merge PDFs**: Click "Merge PDFs" in the top bar. Drag and drop your files, reorder them, and click "Merge & Download".
+4. **Fix Numbers**: If you merged files or added pages, click "Fix Numbers" to automatically update `Page 1`, `Page 2`, etc.
+5. **Save**: Click "Save as PDF" for a visual snapshot, or "Convert to DOCX" to edit further in Microsoft Word.
 
 ---
 
-## Author
+## 🚀 Deploy Your Own (Free)
+
+Because this is a static website, you can host it for free with unlimited bandwidth on Cloudflare Pages or Netlify.
+
+1. Clone this repository or download the files.
+2. Create a free account on [Cloudflare Pages](https://pages.cloudflare.com/).
+3. Click **Create a project** → **Upload assets**.
+4. Drag and drop the folder containing `index.html`, `style.css`, `app.js`, and your `img` folder.
+5. Click **Deploy**. You will get a free URL like `your-project.pages.dev`.
+
+---
+
+## 👨‍💻 Author
 
 **Arafat Khan**
-
 - 🌐 Portfolio: [arafatkhan.vercel.app](https://arafatkhan.vercel.app)
 - 💻 GitHub: [@iamthearafatkhan](https://github.com/iamthearafatkhan)
 - 💼 LinkedIn: [iamthearafatkhan](https://www.linkedin.com/in/iamthearafatkhan/)
 
 ---
 
-## Contributing
+## 📄 License
 
-Found a bug or want to add a feature? Open an issue or send a pull request.
-Helpful contributions especially welcome for:
-
-- Better handwriting / OCR support
-- Multi-column PDF layouts
-- Right-to-left language support (Arabic, Bangla etc)
-
----
-
-## License
-
-MIT — free to use, fork, modify, and share. See [LICENSE](LICENSE) for details.
-
-Built to be free forever.
+This project is open-source and available under the [MIT License](LICENSE). 
+Feel free to fork it, improve it, and use it for your own projects!
